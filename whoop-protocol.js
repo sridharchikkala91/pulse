@@ -73,7 +73,27 @@
     };
   }
 
-  const api = { crc8, crc32, crc16Modbus, decodeWhoop5Frame, CLIENT_HELLO };
+  // Direction marker at header bytes[4:6]. Source: OpenStrap/protocol's band.dart
+  // (byte-verified against real gen5 fixtures) — [0x00,0x01] on every host->strap
+  // COMMAND frame, [0x01,0x00] on every strap->host frame of any other packet type.
+  // Confirmed independently against our own captured GET_HELLO response frames,
+  // which carry [0x01,0x00] exactly as documented.
+  const OUTBOUND_DIRECTION_MARKER = [0x00, 0x01];
+
+  // Builds an outgoing WHOOP 5.0/MG COMMAND frame (type=0x23) for the given cmd/payload.
+  function encodeWhoop5Command(cmd, payload){
+    const pay = payload || [];
+    const inner = [0x23, 0x01, cmd, ...pay]; // type=COMMAND(0x23), seq=1 (only sequence value seen in captures so far)
+    const crc32Bytes = [];
+    const c32 = crc32(inner);
+    crc32Bytes.push(c32 & 0xFF, (c32>>>8)&0xFF, (c32>>>16)&0xFF, (c32>>>24)&0xFF);
+    const declLength = inner.length + 4;
+    const header = [0xAA, 0x01, declLength & 0xFF, (declLength>>>8)&0xFF, ...OUTBOUND_DIRECTION_MARKER];
+    const c16 = crc16Modbus(header);
+    return [...header, c16 & 0xFF, (c16>>>8)&0xFF, ...inner, ...crc32Bytes];
+  }
+
+  const api = { crc8, crc32, crc16Modbus, decodeWhoop5Frame, encodeWhoop5Command, CLIENT_HELLO, OUTBOUND_DIRECTION_MARKER };
   if(typeof module !== "undefined" && module.exports){
     module.exports = api;
   } else {

@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert');
-const { crc8, crc32, crc16Modbus, decodeWhoop5Frame, CLIENT_HELLO } = require('./whoop-protocol.js');
+const { crc8, crc32, crc16Modbus, decodeWhoop5Frame, encodeWhoop5Command, CLIENT_HELLO } = require('./whoop-protocol.js');
 
 const ASCII_123456789 = [0x31,0x32,0x33,0x34,0x35,0x36,0x37,0x38,0x39];
 
@@ -39,4 +39,22 @@ test('decodeWhoop5Frame parses CLIENT_HELLO with both CRCs valid', () => {
 
 test('decodeWhoop5Frame returns null for a buffer shorter than the minimum envelope', () => {
   assert.strictEqual(decodeWhoop5Frame([0xAA, 0x01, 0x00]), null);
+});
+
+test('encodeWhoop5Command reproduces the real CLIENT_HELLO frame byte-for-byte (cmd=0x91, payload=[1])', () => {
+  // GET_HELLO's own request happens to carry a payload byte of 1 and is the
+  // one frame we have independently verified against real hardware — a
+  // genuine golden round-trip test, not a fabricated expectation.
+  assert.deepStrictEqual(encodeWhoop5Command(0x91, [0x01]), CLIENT_HELLO);
+});
+
+test('encodeWhoop5Command output round-trips through decodeWhoop5Frame with valid CRCs', () => {
+  const frame = encodeWhoop5Command(26, [0x00]); // GET_BATTERY_LEVEL
+  const decoded = decodeWhoop5Frame(frame);
+  assert.notStrictEqual(decoded, null);
+  assert.strictEqual(decoded.type, 0x23);
+  assert.strictEqual(decoded.cmd, 26);
+  assert.deepStrictEqual(decoded.payload, [0x00]);
+  assert.strictEqual(decoded.crc16Valid, true);
+  assert.strictEqual(decoded.crc32Valid, true);
 });
