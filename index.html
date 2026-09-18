@@ -767,6 +767,19 @@
               }
             } else {
               line("NOTIFY " + uuid.slice(0,8) + " decoded: type=" + decoded.type + " cmd=" + decoded.cmd + " payload=[" + decoded.payload.join(",") + "] crc16Valid=" + decoded.crc16Valid + " crc32Valid=" + decoded.crc32Valid);
+              if(decoded.cmd === 0x22 && decoded.payload.length >= 63){
+                // GET_DATA_RANGE response: payload[1]=status, payload[2]=revision, oldest u32 @35, newest u32 @59
+                const pay = decoded.payload;
+                const statusOk = pay[1] === 1;
+                const revOk = pay[2] === 1;
+                if(statusOk && revOk){
+                  const le32 = at => pay[at] | (pay[at+1]<<8) | (pay[at+2]<<16) | (pay[at+3]<<24);
+                  const oldest = le32(35), newest = le32(59);
+                  line("  DATA RANGE: oldest=" + new Date(oldest*1000).toISOString() + " newest=" + new Date(newest*1000).toISOString());
+                } else {
+                  line("  DATA RANGE response present but status/revision not OK (status=" + pay[1] + " revision=" + pay[2] + ")");
+                }
+              }
             }
           });
         }catch(e){
@@ -777,11 +790,11 @@
       line("Writing CLIENT_HELLO...");
       await cmdChar.writeValueWithResponse(new Uint8Array(WhoopProtocol.CLIENT_HELLO));
       await sleep(1500);
-      line("Writing GET_DATA_RANGE...");
-      await cmdChar.writeValueWithResponse(new Uint8Array(WhoopProtocol.encodeWhoop5Command(0x22, [])));
+      line("Writing GET_DATA_RANGE (payload [0x00], gen4 convention — gen5's documented empty payload got silence last time)...");
+      await cmdChar.writeValueWithResponse(new Uint8Array(WhoopProtocol.encodeWhoop5Command(0x22, [0x00])));
       await sleep(1500);
-      line("Writing SEND_HISTORICAL_DATA (starts the drain)...");
-      await cmdChar.writeValueWithResponse(new Uint8Array(WhoopProtocol.encodeWhoop5Command(0x16, [])));
+      line("Writing SEND_HISTORICAL_DATA (payload [0x00], starts the drain)...");
+      await cmdChar.writeValueWithResponse(new Uint8Array(WhoopProtocol.encodeWhoop5Command(0x16, [0x00])));
       line("Drain started. Waiting for chunks — this may take a while, leave it open...");
     }catch(e){
       line("OFFLOAD FAILED: " + (e && e.name ? e.name + ": " : "") + (e && e.message ? e.message : e));
