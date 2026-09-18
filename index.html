@@ -402,10 +402,22 @@
     if(!rhr || !maxHr || rhr<=0) return null;
     return 15.3 * (maxHr / rhr); // Uth-Sørensen-Overgaard-Pedersen (2004) non-exercise VO2max estimate
   }
-  function estimateFitnessAge(age, vo2max){
+  function estimateFitnessAge(age, vo2max, hrv){
     if(!age || vo2max==null) return null;
     const avgVo2maxForAge = 55 - 0.35*(age-20); // rough population-average VO2max decline (~0.35 ml/kg/min per year past 20)
-    return clamp(Math.round(age + (avgVo2maxForAge - vo2max)/0.35), 10, 90);
+    const ageAdjustFromRhr = (avgVo2maxForAge - vo2max) / 0.35;
+    // HRV reference: Nunan, Sandercock & Brodie (2010) meta-analysis, n=21,438 healthy adults,
+    // mean short-term RMSSD 42ms, normal range 19-75ms -> approx SD ~= (75-19)/4 = 14ms.
+    // Not age-stratified (no verifiable age-decade table was available), so this measures
+    // "fitness relative to the general healthy-adult population," not "relative to your age band."
+    let ageAdjustFromHrv = 0;
+    if(hrv!=null){
+      const hrvZ = (hrv - 42) / 14;
+      ageAdjustFromHrv = -4 * hrvZ; // own approximation: 1 SD above/below average HRV ~= 4 years younger/older
+    }
+    // HRV weighted more heavily than the RHR/VO2max signal — it's the better-validated aging biomarker of the two.
+    const adjust = hrv!=null ? (0.35*ageAdjustFromRhr + 0.65*ageAdjustFromHrv) : ageAdjustFromRhr;
+    return clamp(Math.round(age + adjust), 10, 90);
   }
   function recoveryScore(hrvToday, rhrToday, baselineHrv, baselineRhr, sleepHours){
     if(hrvToday==null || !baselineHrv.mean || baselineHrv.std===0) return null;
@@ -619,7 +631,8 @@
     $("tileHrv").innerHTML = fmt0(last ? last.hrv : rmssd(state.liveRr.slice(-60))) + " <span>ms</span>";
     $("tileSleep").innerHTML = fmt1(last ? last.sleepHours : null) + " <span>hrs</span>";
 
-    const fitAge = estimateFitnessAge(state.settings.age, estimateVo2max(last ? last.rhr : getEffectiveRhr(), estimateMaxHr(state.settings.age)));
+    const fitAgeHrv = last ? last.hrv : rmssd(state.liveRr.slice(-60));
+    const fitAge = estimateFitnessAge(state.settings.age, estimateVo2max(last ? last.rhr : getEffectiveRhr(), estimateMaxHr(state.settings.age)), fitAgeHrv);
     $("tileFitnessAge").innerHTML = (fitAge!=null ? fitAge : "--") + " <span>yrs</span>";
     $("fitnessAgeNote").textContent = !state.settings.age
       ? "Add your age in Connect to see this."
