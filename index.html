@@ -267,6 +267,13 @@
     <pre id="versionLog" class="small" style="white-space:pre-wrap; margin-top:10px; max-height:280px; overflow:auto; background:var(--surface-2); border-radius:10px; padding:10px;"></pre>
   </div>
 
+  <div class="section-title">Debug — historical data offload</div>
+  <div class="card">
+    <p class="small muted" style="margin-bottom:10px;">Throwaway diagnostic. Drives the real offload state machine (GET_DATA_RANGE → SEND_HISTORICAL_DATA → chunks → ACK each HISTORY_END → stop at HISTORY_COMPLETE) and captures raw chunk bytes for later decoding. May take a while — leave it open.</p>
+    <button class="btn secondary" id="offloadBtn">Pull historical data</button>
+    <pre id="offloadLog" class="small" style="white-space:pre-wrap; margin-top:10px; max-height:320px; overflow:auto; background:var(--surface-2); border-radius:10px; padding:10px;"></pre>
+  </div>
+
   <div class="section-title">Your baseline</div>
   <div class="card">
     <label class="field">
@@ -698,6 +705,89 @@
       console.error(e);
     }
   }
+  async function pullHistoricalData(){
+    const log = $("offloadLog");
+    const line = s => { log.textContent += s + "\n"; log.scrollTop = log.scrollHeight; };
+    log.textContent = "";
+    line("Starting historical offload at " + new Date().toLocaleTimeString());
+    let chunkCount = 0;
+    let cmdChar = null;
+    try{
+      const device = await navigator.bluetooth.requestDevice({
+        filters: [{ services:[HR_SERVICE] }],
+        optionalServices: [BATTERY_SERVICE, WHOOP_PROPRIETARY_SERVICE]
+      });
+      line("Device picked: " + device.name);
+      const server = await device.gatt.connect();
+      const service = await server.getPrimaryService(WHOOP_PROPRIETARY_SERVICE);
+      const notifyUuids = [
+        "fd4b0003-cce1-4033-93ce-002d5875f58a",
+        "fd4b0004-cce1-4033-93ce-002d5875f58a",
+        "fd4b0005-cce1-4033-93ce-002d5875f58a",
+        "fd4b0007-cce1-4033-93ce-002d5875f58a"
+      ];
+      for(const uuid of notifyUuids){
+        try{
+          const c = await service.getCharacteristic(uuid);
+          await c.startNotifications();
+          c.addEventListener("characteristicvaluechanged", async (e)=>{
+            const bytes = new Uint8Array(e.target.value.buffer);
+            const decoded = WhoopProtocol.decodeWhoop5Frame(bytes);
+            if(!decoded){ line("NOTIFY " + uuid.slice(0,8) + " raw (unparsed): " + toHex(bytes)); return; }
+
+            if(decoded.type === 49){ // METADATA
+              const sub = decoded.cmd; // 1=START, 2=END, 3=COMPLETE
+              if(sub === 1){
+                line("METADATA: HISTORY_START (informational)");
+              } else if(sub === 2){
+                const pay = decoded.payload;
+                if(pay.length >= 18){
+                  const token = pay.slice(10, 18);
+                  line("METADATA: HISTORY_END — token=[" + token.join(",") + "] — sending ACK, continuing...");
+                  try{
+                    const ackFrame = WhoopProtocol.encodeWhoop5Command(0x17, [0x01, ...token]);
+                    await cmdChar.writeValueWithResponse(new Uint8Array(ackFrame));
+                  }catch(ackErr){
+                    line("  ACK FAILED: " + (ackErr.message||ackErr));
+                  }
+                } else {
+                  line("METADATA: HISTORY_END but payload too short to extract token (" + pay.length + " bytes)");
+                }
+              } else if(sub === 3){
+                line("METADATA: HISTORY_COMPLETE — offload finished, not ACKing further");
+              } else {
+                line("METADATA: unknown sub-type " + sub);
+              }
+            } else if(decoded.type === 47){ // HISTORICAL_DATA
+              chunkCount++;
+              if(chunkCount <= 3){
+                line("HISTORICAL_DATA chunk #" + chunkCount + " (" + decoded.payload.length + " bytes): " + toHex(decoded.payload));
+              } else if(chunkCount % 20 === 0){
+                line("HISTORICAL_DATA: " + chunkCount + " chunks received so far...");
+              }
+            } else {
+              line("NOTIFY " + uuid.slice(0,8) + " decoded: type=" + decoded.type + " cmd=" + decoded.cmd + " payload=[" + decoded.payload.join(",") + "] crc16Valid=" + decoded.crc16Valid + " crc32Valid=" + decoded.crc32Valid);
+            }
+          });
+        }catch(e){
+          line("Could not subscribe to " + uuid.slice(0,8) + ": " + (e.message||e));
+        }
+      }
+      cmdChar = await service.getCharacteristic("fd4b0002-cce1-4033-93ce-002d5875f58a");
+      line("Writing CLIENT_HELLO...");
+      await cmdChar.writeValueWithResponse(new Uint8Array(WhoopProtocol.CLIENT_HELLO));
+      await sleep(1500);
+      line("Writing GET_DATA_RANGE...");
+      await cmdChar.writeValueWithResponse(new Uint8Array(WhoopProtocol.encodeWhoop5Command(0x22, [])));
+      await sleep(1500);
+      line("Writing SEND_HISTORICAL_DATA (starts the drain)...");
+      await cmdChar.writeValueWithResponse(new Uint8Array(WhoopProtocol.encodeWhoop5Command(0x16, [])));
+      line("Drain started. Waiting for chunks — this may take a while, leave it open...");
+    }catch(e){
+      line("OFFLOAD FAILED: " + (e && e.name ? e.name + ": " : "") + (e && e.message ? e.message : e));
+      console.error(e);
+    }
+  }
   function onDisconnected(){
     state.connected = false;
     renderConnectionStatus();
@@ -1038,6 +1128,7 @@
     $("helloBtn").addEventListener("click", testClientHelloHandshake);
     $("batteryBtn").addEventListener("click", getBatteryLevel);
     $("versionBtn").addEventListener("click", getFirmwareVersion);
+    $("offloadBtn").addEventListener("click", pullHistoricalData);
     $("sleepToggleBtn").addEventListener("click", toggleSleep);
     $("saveSettingsBtn").addEventListener("click", saveSettings);
     $("importInput").addEventListener("change", (e)=>{
