@@ -7,44 +7,21 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <style>
   :root{
-    --bg: #F5F3EE;
-    --surface: #FFFFFF;
-    --surface-2: #EDEAE2;
-    --ink: #17191C;
-    --ink-muted: #6B6F76;
-    --line: #DEDAD0;
-    --good: #1E8E5A;
-    --mid: #B8860B;
-    --low: #C23B2E;
-    --accent: #3A5BA0;
+    color-scheme: dark;
+    --bg: #0A0A0C;
+    --surface: #15171B;
+    --surface-2: #1D2025;
+    --ink: #F3F4F6;
+    --ink-muted: #8A9099;
+    --line: #262A30;
+    --good: #2ED9A6;
+    --mid: #F2C94C;
+    --low: #FF5C6C;
+    --strain: #3FA9F5;
+    --sleep: #6C7CFF;
+    --accent: #3FA9F5;
     --font-display: "Space Grotesk", -apple-system, BlinkMacSystemFont, sans-serif;
     --font-body: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, sans-serif;
-  }
-  @media (prefers-color-scheme: dark){
-    :root:not([data-theme="light"]){
-      --bg: #101214;
-      --surface: #17191D;
-      --surface-2: #1E2125;
-      --ink: #F2EFE9;
-      --ink-muted: #92979F;
-      --line: #2A2D32;
-      --good: #3ECF8E;
-      --mid: #E8B84B;
-      --low: #E8685A;
-      --accent: #6E93E6;
-    }
-  }
-  :root[data-theme="dark"]{
-    --bg: #101214;
-    --surface: #17191D;
-    --surface-2: #1E2125;
-    --ink: #F2EFE9;
-    --ink-muted: #92979F;
-    --line: #2A2D32;
-    --good: #3ECF8E;
-    --mid: #E8B84B;
-    --low: #E8685A;
-    --accent: #6E93E6;
   }
   *{box-sizing:border-box; -webkit-tap-highlight-color: transparent;}
   html,body{margin:0; padding:0; background:var(--bg); color:var(--ink); font-family:var(--font-body);}
@@ -70,26 +47,26 @@
   .muted{color:var(--ink-muted);}
   .small{font-size:12.5px;}
 
-  /* Recovery ring */
-  .ring-wrap{display:flex; flex-direction:column; align-items:center; padding: 10px 0 4px;}
-  .ring-num{font-family:var(--font-display); font-size:56px; font-weight:600; line-height:1;}
-  .ring-label{font-size:13px; color:var(--ink-muted); margin-top:6px; text-align:center; max-width:260px;}
-  svg.ring{overflow:visible;}
-  .ring-track{fill:none; stroke:var(--surface-2); stroke-width:10;}
-  .ring-progress{fill:none; stroke-width:10; stroke-linecap:round; transform:rotate(-90deg); transform-origin:60px 60px; transition: stroke-dasharray .6s ease;}
+  /* Recovery ring — the hero: floats on the page background, no card chrome */
+  .ring-wrap{display:flex; flex-direction:column; align-items:center; padding: 22px 0 10px;}
+  .ring-num{font-family:var(--font-display); font-size:72px; font-weight:700; line-height:1;}
+  .ring-label{font-size:13.5px; color:var(--ink-muted); margin-top:10px; text-align:center; max-width:280px;}
+  svg.ring{overflow:visible; transition: filter .6s ease;}
+  .ring-track{fill:none; stroke:var(--surface-2); stroke-width:11;}
+  .ring-progress{fill:none; stroke-width:11; stroke-linecap:round; transform:rotate(-90deg); transform-origin:60px 60px; transition: stroke-dasharray .6s ease;}
 
   .tile-grid{display:grid; grid-template-columns:repeat(2,1fr); gap:10px;}
   .tile{background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:14px;}
-  .tile .k{font-size:11.5px; color:var(--ink-muted); text-transform:none;}
-  .tile .v{font-family:var(--font-display); font-size:24px; margin-top:4px;}
-  .tile .v span{font-size:13px; color:var(--ink-muted); font-family:var(--font-body); margin-left:2px;}
+  .tile .k{font-size:11px; color:var(--ink-muted); text-transform:uppercase; letter-spacing:.06em; font-weight:600;}
+  .tile .v{font-family:var(--font-display); font-size:24px; margin-top:6px; font-weight:600;}
+  .tile .v span{font-size:13px; color:var(--ink-muted); font-family:var(--font-body); margin-left:2px; font-weight:400;}
   .spark{margin-top:8px; height:28px; width:100%; display:block;}
 
   /* Strain gauge */
   .gauge-wrap{display:flex; align-items:center; gap:14px;}
-  .gauge-num{font-family:var(--font-display); font-size:34px;}
+  .gauge-num{font-family:var(--font-display); font-size:34px; font-weight:700;}
   .gauge-bar{flex:1; height:10px; background:var(--surface-2); border-radius:6px; overflow:hidden;}
-  .gauge-fill{height:100%; background:var(--accent); border-radius:6px; transition:width .6s ease;}
+  .gauge-fill{height:100%; background:var(--strain); border-radius:6px; transition:width .6s ease;}
 
   button{font-family:var(--font-body); cursor:pointer; border:none;}
   .btn{background:var(--ink); color:var(--bg); padding:13px 18px; border-radius:12px; font-size:15px; font-weight:600; width:100%;}
@@ -125,8 +102,10 @@
   .banner{background:var(--surface-2); border-radius:12px; padding:12px 14px; font-size:13px; color:var(--ink-muted); margin-bottom:14px;}
   .banner b{color:var(--ink); font-weight:600;}
 
-  .section-title{font-size:14px; font-weight:600; margin: 22px 0 10px; color:var(--ink-muted);}
+  .section-title{font-size:11.5px; font-weight:700; margin: 24px 0 10px; color:var(--ink-muted); text-transform:uppercase; letter-spacing:.08em;}
   .section-title:first-child{margin-top:0;}
+
+  .estimate-tag{display:block; font-size:10px; font-weight:600; letter-spacing:.02em; color:var(--ink-muted); text-transform:none; margin-top:2px;}
 </style>
 </head>
 <body>
@@ -143,14 +122,13 @@
     <p class="small"><b>Live connection needs a Web Bluetooth browser.</b> Open this page in <b>Bluefy</b> or <b>WebBLE</b> on your iPhone to pair your strap — regular Safari can't do BLE.</p>
   </div>
 
-  <div class="card ring-wrap">
-    <svg class="ring" width="140" height="140" viewBox="0 0 120 120">
+  <div class="ring-wrap">
+    <svg class="ring" width="176" height="176" viewBox="0 0 120 120" id="recoveryRingSvg">
       <circle class="ring-track" cx="60" cy="60" r="52"></circle>
       <circle class="ring-progress" id="recoveryRing" cx="60" cy="60" r="52" stroke="var(--good)" stroke-dasharray="0 326.7"></circle>
-      <text x="60" y="60" text-anchor="middle" dy="0" font-family="inherit"></text>
     </svg>
-    <div class="ring-num" id="recoveryNum" style="margin-top:-86px;">--</div>
-    <div class="ring-label" id="recoveryLabel" style="margin-top:60px;">Recovery — pair your strap and sleep a night to get your first score.</div>
+    <div class="ring-num" id="recoveryNum" style="margin-top:-108px;">--</div>
+    <div class="ring-label" id="recoveryLabel" style="margin-top:76px;">Recovery — pair your strap and sleep a night to get your first score.</div>
   </div>
 
   <div class="card">
@@ -184,6 +162,11 @@
       <div class="k">Sleep</div>
       <div class="v" id="tileSleep">-- <span>hrs</span></div>
       <svg class="spark" id="sparkSleep"></svg>
+    </div>
+    <div class="tile">
+      <div class="k">Fitness age<span class="estimate-tag">estimate</span></div>
+      <div class="v" id="tileFitnessAge">-- <span>yrs</span></div>
+      <div class="small muted" id="fitnessAgeNote" style="margin-top:8px;"></div>
     </div>
   </div>
 
@@ -415,6 +398,15 @@
     return n ? Math.sqrt(sumSq/n) : null;
   }
   function estimateMaxHr(age){ return age ? (208 - 0.7*age) : 190; } // Tanaka formula
+  function estimateVo2max(rhr, maxHr){
+    if(!rhr || !maxHr || rhr<=0) return null;
+    return 15.3 * (maxHr / rhr); // Uth-Sørensen-Overgaard-Pedersen (2004) non-exercise VO2max estimate
+  }
+  function estimateFitnessAge(age, vo2max){
+    if(!age || vo2max==null) return null;
+    const avgVo2maxForAge = 55 - 0.35*(age-20); // rough population-average VO2max decline (~0.35 ml/kg/min per year past 20)
+    return clamp(Math.round(age + (avgVo2maxForAge - vo2max)/0.35), 10, 90);
+  }
   function recoveryScore(hrvToday, rhrToday, baselineHrv, baselineRhr, sleepHours){
     if(hrvToday==null || !baselineHrv.mean || baselineHrv.std===0) return null;
     const hrvZ = (hrvToday - baselineHrv.mean) / (baselineHrv.std || 5);
@@ -458,8 +450,7 @@
     let bpm;
     if(flags & 0x01){ bpm = dataView.getUint16(idx, true); idx+=2; }
     else { bpm = dataView.getUint8(idx); idx+=1; }
-    if(flags & 0x04){ idx += 1; } // energy expended skip if present (varies) — kept simple, contact status
-    if(flags & 0x08){ idx += 2; } // energy expended field (uint16) if flagged
+    if(flags & 0x08){ idx += 2; } // energy expended field (uint16) if flagged — bits 1-2 (sensor contact) are status-only, no payload bytes
     const rr = [];
     if(flags & 0x10){
       while(idx+1 < dataView.byteLength){
@@ -617,6 +608,7 @@
     const pct = score!=null ? score/100 : 0;
     ring.setAttribute("stroke-dasharray", `${circumference*pct} ${circumference}`);
     ring.setAttribute("stroke", recoveryColor(score));
+    $("recoveryRingSvg").style.filter = score!=null ? `drop-shadow(0 0 14px color-mix(in srgb, ${recoveryColor(score)} 55%, transparent))` : "none";
     $("recoveryNum").textContent = score!=null ? score : "--";
     $("recoveryNum").style.color = recoveryColor(score);
     $("recoveryLabel").textContent = score!=null
@@ -626,6 +618,12 @@
     $("tileRhr").innerHTML = fmt0(last ? last.rhr : getEffectiveRhr()) + " <span>bpm</span>";
     $("tileHrv").innerHTML = fmt0(last ? last.hrv : rmssd(state.liveRr.slice(-60))) + " <span>ms</span>";
     $("tileSleep").innerHTML = fmt1(last ? last.sleepHours : null) + " <span>hrs</span>";
+
+    const fitAge = estimateFitnessAge(state.settings.age, estimateVo2max(last ? last.rhr : getEffectiveRhr(), estimateMaxHr(state.settings.age)));
+    $("tileFitnessAge").innerHTML = (fitAge!=null ? fitAge : "--") + " <span>yrs</span>";
+    $("fitnessAgeNote").textContent = !state.settings.age
+      ? "Add your age in Connect to see this."
+      : (fitAge!=null ? (fitAge < state.settings.age ? `${state.settings.age-fitAge} years younger than you` : fitAge > state.settings.age ? `${fitAge-state.settings.age} years older than you` : "Right at your age") : "");
 
     sparkline($("sparkRhr"), daily.slice(-14).map(d=>d.rhr).filter(v=>v!=null), "var(--accent)");
     sparkline($("sparkHrv"), daily.slice(-14).map(d=>d.hrv).filter(v=>v!=null), "var(--accent)");
