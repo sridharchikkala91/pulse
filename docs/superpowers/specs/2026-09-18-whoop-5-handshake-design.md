@@ -113,6 +113,65 @@ reachable. Next slice: fetch and decode `whoop_protocol.json` from
 NOOP's repo to get the real field schema for this response (and
 others), rather than guessing at the trailing numeric fields' meaning.
 
+## Follow-on work done same session (beyond original Slice 1 scope)
+
+- Resolved the header-bytes open question (see OpenStrap/protocol's
+  `band.dart`): they're a direction marker, `[0x00,0x01]` outbound
+  (host→strap COMMAND), `[0x01,0x00]` inbound (strap→host, any other
+  packet type) — byte-verified by that project against 8 real
+  fixtures, and independently cross-checked here against our own
+  captured GET_HELLO responses (which do carry `[0x01,0x00]`).
+- Built `encodeWhoop5Command(cmd, payload)` in `whoop-protocol.js`.
+  Golden test: `encodeWhoop5Command(0x91,[1])` reproduces the real,
+  hardware-verified `CLIENT_HELLO` byte-for-byte.
+- **GET_BATTERY_LEVEL (cmd=26, payload=[0x00]) works** — verified on
+  real hardware, returned 9.9%. Response field layout (payload[2] |
+  payload[3]<<8, /10 = percent) sourced from NOOP's `PostHooks.swift`.
+- **REPORT_VERSION_INFO (cmd=7) does NOT work** — tried both an empty
+  payload and `[0x01]` (a documented gen5 fix for two OTHER commands
+  with the same "empty payload silently rejected" bug, from
+  OpenStrap/protocol's `commands.dart`). Both attempts got zero
+  response on all 4 notify channels. No real captured fixture exists
+  in that repo's test suite either. **Parked — not blocking anything
+  else, low value (just a version string), do not re-attempt without
+  new evidence** (a real packet capture, or another reference
+  implementation that actually gets a response).
+
+## Next real target: historical-data offload (bigger sub-project)
+
+Real vitals (SpO2, skin temperature) are **not** available via a
+simple live command — traced to `Gen5HistorySample` in
+OpenStrap/protocol's `gen5_records.dart`, which extends
+`Gen5HistoricalRecord`. They only arrive through WHOOP's
+`HISTORICAL_DATA` (type 47) offload: a stateful multi-step protocol
+(request a range via `GET_DATA_RANGE` → `SEND_HISTORICAL_DATA` →
+strap streams chunked records → each chunk framed by `METADATA` (type
+49) `HISTORY_START`/`HISTORY_END` markers → acknowledge each chunk
+with `HISTORICAL_DATA_RESULT` carrying an 8-byte trim-cursor token
+from the `HISTORY_END` marker → repeat until `HISTORY_COMPLETE`).
+
+This deserves its own brainstorming → spec → plan cycle before
+implementation, same as the original handshake work — it's a real
+subsystem (stateful, multi-packet-type), not a one-off command. Field
+layouts already known from `gen5_records.dart` (read directly, not
+AI-summarized — trust level is high):
+- Skin temp: signed int16 LE at `inner[65:67]` (= `payload[62:64]`
+  once you strip our 3-byte type/seq/cmd prefix), ÷100 = °C. Sentinel
+  -5000 (-50.00°C) means unavailable — must check for this before
+  displaying.
+- SpO2: single byte at `inner[74]` (= `payload[71]`) — encoding is
+  **not fully pinned down even by the source project** (they
+  deliberately refuse to publish it as a percentage). Treat as a raw
+  diagnostic value only until more evidence exists, not a real SpO2%.
+- `inner` offsets are relative to the frame's inner record starting at
+  the `type` byte (frame-abs = inner + 8, since gen5's envelope header
+  is exactly 8 bytes); our own `decoded.payload` already strips the
+  3-byte `[type,seq,cmd]` prefix, so `payload[N] = inner[N+3]`.
+
+Respiratory rate: not found anywhere in `gen5_records.dart` in this
+session's research — still completely unlocated, separate research
+task.
+
 ## Testing
 
 There's no way to unit-test against real strap behavior. Verification
