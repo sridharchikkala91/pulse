@@ -1,0 +1,848 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pulse — your strap, your data</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+  :root{
+    --bg: #F5F3EE;
+    --surface: #FFFFFF;
+    --surface-2: #EDEAE2;
+    --ink: #17191C;
+    --ink-muted: #6B6F76;
+    --line: #DEDAD0;
+    --good: #1E8E5A;
+    --mid: #B8860B;
+    --low: #C23B2E;
+    --accent: #3A5BA0;
+    --font-display: "Space Grotesk", -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-body: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg: #101214;
+      --surface: #17191D;
+      --surface-2: #1E2125;
+      --ink: #F2EFE9;
+      --ink-muted: #92979F;
+      --line: #2A2D32;
+      --good: #3ECF8E;
+      --mid: #E8B84B;
+      --low: #E8685A;
+      --accent: #6E93E6;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg: #101214;
+    --surface: #17191D;
+    --surface-2: #1E2125;
+    --ink: #F2EFE9;
+    --ink-muted: #92979F;
+    --line: #2A2D32;
+    --good: #3ECF8E;
+    --mid: #E8B84B;
+    --low: #E8685A;
+    --accent: #6E93E6;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color: transparent;}
+  html,body{margin:0; padding:0; background:var(--bg); color:var(--ink); font-family:var(--font-body);}
+  body{
+    padding-bottom: calc(76px + env(safe-area-inset-bottom));
+    padding-top: env(safe-area-inset-top);
+    min-height:100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+  h1,h2,h3{font-family:var(--font-display); margin:0; letter-spacing:-0.01em;}
+  p{margin:0;}
+  .screen{display:none; padding: 20px 18px 8px; max-width:520px; margin:0 auto; animation: fadein .25s ease;}
+  .screen.active{display:block;}
+  @keyframes fadein{from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:none;}}
+
+  .topbar{display:flex; align-items:baseline; justify-content:space-between; padding: 18px 18px 4px; max-width:520px; margin:0 auto;}
+  .topbar .date{color:var(--ink-muted); font-size:13px;}
+  .topbar h1{font-size:20px;}
+
+  .card{background:var(--surface); border:1px solid var(--line); border-radius:18px; padding:18px; margin-bottom:14px;}
+  .card + .card{margin-top:0;}
+  .row{display:flex; align-items:center; justify-content:space-between; gap:10px;}
+  .muted{color:var(--ink-muted);}
+  .small{font-size:12.5px;}
+
+  /* Recovery ring */
+  .ring-wrap{display:flex; flex-direction:column; align-items:center; padding: 10px 0 4px;}
+  .ring-num{font-family:var(--font-display); font-size:56px; font-weight:600; line-height:1;}
+  .ring-label{font-size:13px; color:var(--ink-muted); margin-top:6px; text-align:center; max-width:260px;}
+  svg.ring{overflow:visible;}
+  .ring-track{fill:none; stroke:var(--surface-2); stroke-width:10;}
+  .ring-progress{fill:none; stroke-width:10; stroke-linecap:round; transform:rotate(-90deg); transform-origin:60px 60px; transition: stroke-dasharray .6s ease;}
+
+  .tile-grid{display:grid; grid-template-columns:repeat(2,1fr); gap:10px;}
+  .tile{background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:14px;}
+  .tile .k{font-size:11.5px; color:var(--ink-muted); text-transform:none;}
+  .tile .v{font-family:var(--font-display); font-size:24px; margin-top:4px;}
+  .tile .v span{font-size:13px; color:var(--ink-muted); font-family:var(--font-body); margin-left:2px;}
+  .spark{margin-top:8px; height:28px; width:100%; display:block;}
+
+  /* Strain gauge */
+  .gauge-wrap{display:flex; align-items:center; gap:14px;}
+  .gauge-num{font-family:var(--font-display); font-size:34px;}
+  .gauge-bar{flex:1; height:10px; background:var(--surface-2); border-radius:6px; overflow:hidden;}
+  .gauge-fill{height:100%; background:var(--accent); border-radius:6px; transition:width .6s ease;}
+
+  button{font-family:var(--font-body); cursor:pointer; border:none;}
+  .btn{background:var(--ink); color:var(--bg); padding:13px 18px; border-radius:12px; font-size:15px; font-weight:600; width:100%;}
+  .btn.secondary{background:var(--surface-2); color:var(--ink); border:1px solid var(--line);}
+  .btn.ghost{background:transparent; color:var(--accent); padding:8px 4px; width:auto; font-weight:600;}
+  .btn:active{transform:scale(0.98);}
+  .btn:disabled{opacity:.45;}
+
+  .status-dot{width:8px; height:8px; border-radius:50%; background:var(--ink-muted); display:inline-block; margin-right:6px;}
+  .status-dot.live{background:var(--good); box-shadow:0 0 0 3px color-mix(in srgb, var(--good) 25%, transparent);}
+
+  input[type=number], input[type=text]{
+    background:var(--surface-2); border:1px solid var(--line); border-radius:10px; color:var(--ink);
+    font-family:var(--font-body); font-size:15px; padding:10px 12px; width:100%;
+  }
+  label.field{display:block; margin-bottom:12px;}
+  label.field .lab{font-size:12.5px; color:var(--ink-muted); margin-bottom:5px; display:block;}
+
+  .hypnogram{width:100%; height:60px;}
+
+  nav.tabs{
+    position:fixed; bottom:0; left:0; right:0; background:var(--surface);
+    border-top:1px solid var(--line); display:flex; padding-bottom: env(safe-area-inset-bottom);
+    z-index:10;
+  }
+  nav.tabs button{
+    flex:1; background:none; padding:11px 4px 9px; display:flex; flex-direction:column; align-items:center;
+    gap:4px; color:var(--ink-muted); font-size:11px;
+  }
+  nav.tabs button.active{color:var(--ink);}
+  nav.tabs svg{width:22px; height:22px;}
+
+  .banner{background:var(--surface-2); border-radius:12px; padding:12px 14px; font-size:13px; color:var(--ink-muted); margin-bottom:14px;}
+  .banner b{color:var(--ink); font-weight:600;}
+
+  .section-title{font-size:14px; font-weight:600; margin: 22px 0 10px; color:var(--ink-muted);}
+  .section-title:first-child{margin-top:0;}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <h1 id="topTitle">Today</h1>
+  <span class="date" id="topDate"></span>
+</div>
+
+<!-- TODAY -->
+<section class="screen active" id="screen-today">
+
+  <div class="card" id="noBleBanner" style="display:none;">
+    <p class="small"><b>Live connection needs a Web Bluetooth browser.</b> Open this page in <b>Bluefy</b> or <b>WebBLE</b> on your iPhone to pair your strap — regular Safari can't do BLE.</p>
+  </div>
+
+  <div class="card ring-wrap">
+    <svg class="ring" width="140" height="140" viewBox="0 0 120 120">
+      <circle class="ring-track" cx="60" cy="60" r="52"></circle>
+      <circle class="ring-progress" id="recoveryRing" cx="60" cy="60" r="52" stroke="var(--good)" stroke-dasharray="0 326.7"></circle>
+      <text x="60" y="60" text-anchor="middle" dy="0" font-family="inherit"></text>
+    </svg>
+    <div class="ring-num" id="recoveryNum" style="margin-top:-86px;">--</div>
+    <div class="ring-label" id="recoveryLabel" style="margin-top:60px;">Recovery — pair your strap and sleep a night to get your first score.</div>
+  </div>
+
+  <div class="card">
+    <div class="row" style="margin-bottom:10px;">
+      <span class="small muted">Strain today</span>
+      <span class="small muted" id="strainState">—</span>
+    </div>
+    <div class="gauge-wrap">
+      <div class="gauge-num" id="strainNum">0.0</div>
+      <div class="gauge-bar"><div class="gauge-fill" id="strainFill" style="width:0%;"></div></div>
+    </div>
+  </div>
+
+  <div class="tile-grid">
+    <div class="tile">
+      <div class="k">Heart rate</div>
+      <div class="v" id="tileHr">-- <span>bpm</span></div>
+      <svg class="spark" id="sparkHr"></svg>
+    </div>
+    <div class="tile">
+      <div class="k">HRV (RMSSD)</div>
+      <div class="v" id="tileHrv">-- <span>ms</span></div>
+      <svg class="spark" id="sparkHrv"></svg>
+    </div>
+    <div class="tile">
+      <div class="k">Resting HR</div>
+      <div class="v" id="tileRhr">-- <span>bpm</span></div>
+      <svg class="spark" id="sparkRhr"></svg>
+    </div>
+    <div class="tile">
+      <div class="k">Sleep</div>
+      <div class="v" id="tileSleep">-- <span>hrs</span></div>
+      <svg class="spark" id="sparkSleep"></svg>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:14px;">
+    <div class="row">
+      <span><span class="status-dot" id="statusDot"></span><span id="statusText" class="small">Not connected</span></span>
+      <button class="btn ghost" id="quickConnectBtn">Connect</button>
+    </div>
+  </div>
+</section>
+
+<!-- SLEEP -->
+<section class="screen" id="screen-sleep">
+  <div class="card">
+    <p class="small muted">Pulse can't see your strap's own motion sensor, so sleep timing here is manual: start it when you get in bed, end it when you're up. The stages below are an estimate from your overnight heart rate pattern, not true accelerometer-based staging.</p>
+  </div>
+
+  <div class="card" id="sleepControlCard">
+    <button class="btn" id="sleepToggleBtn">Start sleep</button>
+    <div class="small muted" id="sleepTimer" style="text-align:center; margin-top:10px;"></div>
+  </div>
+
+  <div class="section-title">Last night</div>
+  <div class="card">
+    <div class="row">
+      <div>
+        <div class="k small muted">Duration</div>
+        <div class="v" id="sleepDuration" style="font-family:var(--font-display); font-size:22px;">--</div>
+      </div>
+      <div>
+        <div class="k small muted">Avg HR</div>
+        <div class="v" id="sleepAvgHr" style="font-family:var(--font-display); font-size:22px;">--</div>
+      </div>
+      <div>
+        <div class="k small muted">Avg HRV</div>
+        <div class="v" id="sleepAvgHrv" style="font-family:var(--font-display); font-size:22px;">--</div>
+      </div>
+    </div>
+    <svg class="hypnogram" id="hypnogram" style="margin-top:14px;"></svg>
+  </div>
+
+  <div class="section-title">Past 14 nights</div>
+  <div class="card">
+    <svg class="spark" id="sparkSleepBig" style="height:52px;"></svg>
+  </div>
+</section>
+
+<!-- TRENDS -->
+<section class="screen" id="screen-trends">
+  <div class="section-title">Recovery — 30 days</div>
+  <div class="card"><svg class="spark" id="trendRecovery" style="height:64px;"></svg></div>
+  <div class="section-title">Strain — 30 days</div>
+  <div class="card"><svg class="spark" id="trendStrain" style="height:64px;"></svg></div>
+  <div class="section-title">HRV — 30 days</div>
+  <div class="card"><svg class="spark" id="trendHrv" style="height:64px;"></svg></div>
+  <div class="section-title">Resting heart rate — 30 days</div>
+  <div class="card"><svg class="spark" id="trendRhr" style="height:64px;"></svg></div>
+</section>
+
+<!-- CONNECT / SETTINGS -->
+<section class="screen" id="screen-settings">
+
+  <div class="section-title">Strap</div>
+  <div class="card">
+    <div class="row" style="margin-bottom:14px;">
+      <span><span class="status-dot" id="statusDot2"></span><span id="statusText2" class="small">Not connected</span></span>
+    </div>
+    <button class="btn" id="connectBtn">Connect strap</button>
+    <p class="small muted" style="margin-top:10px;">Unpair the strap from the official WHOOP app first — it holds one Bluetooth connection at a time. Live heart rate uses the strap's standard Bluetooth heart-rate profile, so no account or subscription is involved.</p>
+  </div>
+
+  <div class="section-title">Your baseline</div>
+  <div class="card">
+    <label class="field">
+      <span class="lab">Age (used to estimate max heart rate)</span>
+      <input type="number" id="inputAge" placeholder="e.g. 29">
+    </label>
+    <label class="field" style="margin-bottom:0;">
+      <span class="lab">Resting heart rate override (optional — Pulse learns this automatically otherwise)</span>
+      <input type="number" id="inputRhr" placeholder="auto">
+    </label>
+  </div>
+  <button class="btn secondary" id="saveSettingsBtn" style="margin-bottom:14px;">Save</button>
+
+  <div class="section-title">Data</div>
+  <div class="card">
+    <div class="row" style="margin-bottom:12px;">
+      <span class="small">All data stays on this device, in this browser.</span>
+    </div>
+    <label class="btn secondary" style="display:block; text-align:center; margin-bottom:10px;">
+      Import WHOOP export (.zip or .csv)
+      <input type="file" id="importInput" accept=".zip,.csv" multiple style="display:none;">
+    </label>
+    <div class="small muted" id="importStatus" style="margin-bottom:10px;"></div>
+    <button class="btn secondary" id="exportBtn" style="margin-bottom:10px;">Export data as JSON</button>
+    <button class="btn secondary" id="resetBtn" style="color:var(--low);">Erase all local data</button>
+  </div>
+
+  <div class="banner">
+    Pulse computes recovery, strain, sleep and HRV on your device from published methods (RMSSD/HRV, Karvonen %HRR, logarithmic strain scaling). These are approximations for personal use, not a medical device and not clinically validated.
+  </div>
+</section>
+
+<nav class="tabs">
+  <button class="tab-btn active" data-screen="today">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 12h4l2 7 4-14 2 7h6"/></svg>
+    Today
+  </button>
+  <button class="tab-btn" data-screen="sleep">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 12.5A8.5 8.5 0 1 1 11.5 3a7 7 0 0 0 9.5 9.5Z"/></svg>
+    Sleep
+  </button>
+  <button class="tab-btn" data-screen="trends">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 17l5-6 4 4 8-10"/></svg>
+    Trends
+  </button>
+  <button class="tab-btn" data-screen="settings">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg>
+    Connect
+  </button>
+</nav>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ---------------- helpers ---------------- */
+  const $ = (id)=>document.getElementById(id);
+  const todayKey = (d=new Date())=>{
+    const x = new Date(d); x.setHours(x.getHours()-6); // "sleep day" rolls over at 6am, not midnight
+    return x.toISOString().slice(0,10);
+  };
+  const mean = a => a.length ? a.reduce((s,v)=>s+v,0)/a.length : 0;
+  const stddev = a => { if(a.length<2) return 0; const m=mean(a); return Math.sqrt(mean(a.map(v=>(v-m)**2))); };
+  const clamp = (v,lo,hi)=>Math.max(lo,Math.min(hi,v));
+  const fmt1 = v => (v===null||v===undefined||isNaN(v)) ? "--" : v.toFixed(1);
+  const fmt0 = v => (v===null||v===undefined||isNaN(v)) ? "--" : Math.round(v).toString();
+
+  /* ---------------- local storage (IndexedDB) ---------------- */
+  const DB_NAME = "pulse-whoop-db", DB_VERSION = 1;
+  let db = null;
+  function openDb(){
+    return new Promise((resolve,reject)=>{
+      const req = indexedDB.open(DB_NAME, DB_VERSION);
+      req.onupgradeneeded = (e)=>{
+        const d = e.target.result;
+        if(!d.objectStoreNames.contains("hrSamples")) d.createObjectStore("hrSamples",{keyPath:"ts"});
+        if(!d.objectStoreNames.contains("dailyMetrics")) d.createObjectStore("dailyMetrics",{keyPath:"date"});
+        if(!d.objectStoreNames.contains("settings")) d.createObjectStore("settings",{keyPath:"key"});
+      };
+      req.onsuccess = ()=>{ db=req.result; resolve(db); };
+      req.onerror = ()=> reject(req.error);
+    });
+  }
+  function idbPut(store, val){
+    return new Promise((res,rej)=>{
+      try{
+        const tx = db.transaction(store,"readwrite");
+        tx.objectStore(store).put(val);
+        tx.oncomplete = ()=>res(true);
+        tx.onerror = ()=>rej(tx.error);
+      }catch(e){ rej(e); }
+    });
+  }
+  function idbGet(store,key){
+    return new Promise((res,rej)=>{
+      try{
+        const tx = db.transaction(store,"readonly");
+        const r = tx.objectStore(store).get(key);
+        r.onsuccess = ()=>res(r.result||null);
+        r.onerror = ()=>rej(r.error);
+      }catch(e){ res(null); }
+    });
+  }
+  function idbAll(store){
+    return new Promise((res,rej)=>{
+      try{
+        const tx = db.transaction(store,"readonly");
+        const r = tx.objectStore(store).getAll();
+        r.onsuccess = ()=>res(r.result||[]);
+        r.onerror = ()=>rej(r.error);
+      }catch(e){ res([]); }
+    });
+  }
+  function idbClearAll(){
+    return new Promise((res)=>{
+      try{
+        const tx = db.transaction(["hrSamples","dailyMetrics","settings"],"readwrite");
+        tx.objectStore("hrSamples").clear();
+        tx.objectStore("dailyMetrics").clear();
+        tx.objectStore("settings").clear();
+        tx.oncomplete = ()=>res(true);
+      }catch(e){ res(false); }
+    });
+  }
+
+  /* ---------------- state ---------------- */
+  const state = {
+    connected:false,
+    device:null,
+    server:null,
+    hrChar:null,
+    liveHr:null,
+    liveRr:[],           // rolling RR intervals (ms) for HRV
+    todayHrSamples:[],   // {ts,bpm}
+    sleeping:false,
+    sleepStart:null,
+    sleepHr:[],
+    sleepRr:[],
+    settings:{ age:null, rhrOverride:null },
+    dailyCache:[]
+  };
+
+  /* ---------------- analytics: published-method approximations ---------------- */
+  function rmssd(rrMs){
+    if(rrMs.length<3) return null;
+    let sumSq=0, n=0;
+    for(let i=1;i<rrMs.length;i++){
+      const d = rrMs[i]-rrMs[i-1];
+      sumSq += d*d; n++;
+    }
+    return n ? Math.sqrt(sumSq/n) : null;
+  }
+  function estimateMaxHr(age){ return age ? (208 - 0.7*age) : 190; } // Tanaka formula
+  function recoveryScore(hrvToday, rhrToday, baselineHrv, baselineRhr, sleepHours){
+    if(hrvToday==null || !baselineHrv.mean || baselineHrv.std===0) return null;
+    const hrvZ = (hrvToday - baselineHrv.mean) / (baselineHrv.std || 5);
+    const rhrZ = baselineRhr.std ? (rhrToday - baselineRhr.mean) / baselineRhr.std : 0;
+    let score = 50 + 22*hrvZ - 13*rhrZ;
+    if(sleepHours!=null) score += clamp((sleepHours-7)*3, -10, 10);
+    return clamp(Math.round(score), 1, 100);
+  }
+  function recoveryColor(score){
+    if(score==null) return "var(--ink-muted)";
+    if(score>=67) return "var(--good)";
+    if(score>=34) return "var(--mid)";
+    return "var(--low)";
+  }
+  // Karvonen %HRR accumulated through the day, mapped to a 0-21 log scale (WHOOP-style range, approximate)
+  function strainFromSamples(samples, rhr, maxHr){
+    if(!samples.length || !rhr || !maxHr || maxHr<=rhr) return 0;
+    let load = 0;
+    for(let i=1;i<samples.length;i++){
+      const dtSec = (samples[i].ts - samples[i-1].ts)/1000;
+      if(dtSec<=0 || dtSec>300) continue; // skip gaps
+      const hrr = clamp((samples[i].bpm - rhr)/(maxHr-rhr), 0, 1);
+      const weight = hrr * Math.exp(1.92*hrr); // Edwards/Banister-style intensity weighting
+      load += weight * dtSec;
+    }
+    const strain = 21 * (1 - Math.exp(-load/9000));
+    return clamp(strain, 0, 21);
+  }
+  function rollingBaseline(dailyArr, field, days){
+    const vals = dailyArr.slice(-days).map(d=>d[field]).filter(v=>v!=null && !isNaN(v));
+    return { mean: mean(vals), std: stddev(vals) || 1 };
+  }
+
+  /* ---------------- BLE (standard Bluetooth Heart Rate + Battery services) ---------------- */
+  const HR_SERVICE = 0x180D, HR_MEASUREMENT = 0x2A37, BATTERY_SERVICE = 0x180F, BATTERY_LEVEL = 0x2A19;
+
+  function parseHrMeasurement(dataView){
+    const flags = dataView.getUint8(0);
+    let idx = 1;
+    let bpm;
+    if(flags & 0x01){ bpm = dataView.getUint16(idx, true); idx+=2; }
+    else { bpm = dataView.getUint8(idx); idx+=1; }
+    if(flags & 0x04){ idx += 1; } // energy expended skip if present (varies) — kept simple, contact status
+    if(flags & 0x08){ idx += 2; } // energy expended field (uint16) if flagged
+    const rr = [];
+    if(flags & 0x10){
+      while(idx+1 < dataView.byteLength){
+        const raw = dataView.getUint16(idx, true); idx+=2;
+        rr.push(Math.round(raw/1024*1000)); // 1/1024s -> ms
+      }
+    }
+    return {bpm, rr};
+  }
+
+  async function connectStrap(){
+    if(!navigator.bluetooth){
+      alert("Web Bluetooth isn't available in this browser. Open this page in Bluefy or WebBLE on your iPhone.");
+      return;
+    }
+    try{
+      const device = await navigator.bluetooth.requestDevice({
+        filters: [{ services:[HR_SERVICE] }],
+        optionalServices: [BATTERY_SERVICE]
+      });
+      state.device = device;
+      device.addEventListener("gattserverdisconnected", onDisconnected);
+      const server = await device.gatt.connect();
+      state.server = server;
+      const hrService = await server.getPrimaryService(HR_SERVICE);
+      const hrChar = await hrService.getCharacteristic(HR_MEASUREMENT);
+      state.hrChar = hrChar;
+      await hrChar.startNotifications();
+      hrChar.addEventListener("characteristicvaluechanged", onHrNotification);
+      state.connected = true;
+      renderConnectionStatus();
+    }catch(e){
+      console.error(e);
+      if(e && e.name !== "NotFoundError"){
+        alert("Couldn't connect: " + (e.message||e));
+      }
+    }
+  }
+  function onDisconnected(){
+    state.connected = false;
+    renderConnectionStatus();
+  }
+  function onHrNotification(e){
+    const {bpm, rr} = parseHrMeasurement(e.target.value);
+    const ts = Date.now();
+    state.liveHr = bpm;
+    state.todayHrSamples.push({ts, bpm});
+    if(rr.length){ state.liveRr.push(...rr); if(state.liveRr.length>200) state.liveRr.splice(0, state.liveRr.length-200); }
+    if(state.sleeping){
+      state.sleepHr.push({ts,bpm});
+      if(rr.length) state.sleepRr.push(...rr);
+    }
+    idbPut("hrSamples", {ts, bpm, rr}).catch(()=>{});
+    renderLive();
+  }
+
+  /* ---------------- rendering ---------------- */
+  function renderConnectionStatus(){
+    const dot = [$("statusDot"), $("statusDot2")];
+    const txt = state.connected ? "Connected" : "Not connected";
+    dot.forEach(d=> d && d.classList.toggle("live", state.connected));
+    $("statusText").textContent = txt;
+    $("statusText2").textContent = txt;
+    $("connectBtn").textContent = state.connected ? "Disconnect" : "Connect strap";
+    $("quickConnectBtn").textContent = state.connected ? "Live" : "Connect";
+    $("noBleBanner").style.display = navigator.bluetooth ? "none" : "block";
+  }
+  function renderLive(){
+    $("tileHr").innerHTML = fmt0(state.liveHr) + " <span>bpm</span>";
+    const r = rmssd(state.liveRr.slice(-60));
+    if(r!=null) $("tileHrv").innerHTML = fmt0(r) + " <span>ms</span>";
+    const rhr = getEffectiveRhr();
+    const maxHr = estimateMaxHr(state.settings.age);
+    const strain = strainFromSamples(state.todayHrSamples, rhr, maxHr);
+    $("strainNum").textContent = fmt1(strain);
+    $("strainFill").style.width = (strain/21*100)+"%";
+    $("strainState").textContent = strain<8?"Light":strain<14?"Moderate":strain<18?"Strenuous":"All out";
+  }
+  function getEffectiveRhr(){
+    if(state.settings.rhrOverride) return state.settings.rhrOverride;
+    const recent = state.todayHrSamples.map(s=>s.bpm).filter(v=>v>30);
+    if(recent.length<10) return 60;
+    const sorted = [...recent].sort((a,b)=>a-b);
+    return sorted[Math.floor(sorted.length*0.1)] || 60; // 10th percentile as resting proxy
+  }
+
+  function sparkline(svg, values, color){
+    if(!svg) return;
+    svg.innerHTML = "";
+    if(!values || values.length<2){
+      return;
+    }
+    const w = svg.clientWidth || 140, h = svg.clientHeight || 28;
+    svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
+    const min = Math.min(...values), max = Math.max(...values);
+    const range = (max-min) || 1;
+    const step = w/(values.length-1);
+    let d = "";
+    values.forEach((v,i)=>{
+      const x = i*step;
+      const y = h - ((v-min)/range)*h;
+      d += (i===0?"M":"L") + x.toFixed(1) + "," + y.toFixed(1) + " ";
+    });
+    const path = document.createElementNS("http://www.w3.org/2000/svg","path");
+    path.setAttribute("d", d.trim());
+    path.setAttribute("fill","none");
+    path.setAttribute("stroke", color || "var(--accent)");
+    path.setAttribute("stroke-width","2");
+    path.setAttribute("stroke-linecap","round");
+    path.setAttribute("stroke-linejoin","round");
+    svg.appendChild(path);
+  }
+
+  async function renderToday(){
+    const daily = await idbAll("dailyMetrics");
+    daily.sort((a,b)=> a.date < b.date ? -1 : 1);
+    state.dailyCache = daily;
+    const last = daily[daily.length-1];
+    const hrvBaseline = rollingBaseline(daily, "hrv", 30);
+    const rhrBaseline = rollingBaseline(daily, "rhr", 30);
+
+    let score = null;
+    if(last){
+      score = recoveryScore(last.hrv, last.rhr, hrvBaseline, rhrBaseline, last.sleepHours);
+    }
+    const circumference = 2*Math.PI*52;
+    const ring = $("recoveryRing");
+    const pct = score!=null ? score/100 : 0;
+    ring.setAttribute("stroke-dasharray", `${circumference*pct} ${circumference}`);
+    ring.setAttribute("stroke", recoveryColor(score));
+    $("recoveryNum").textContent = score!=null ? score : "--";
+    $("recoveryNum").style.color = recoveryColor(score);
+    $("recoveryLabel").textContent = score!=null
+      ? (score>=67 ? "Primed. Your body is ready for load." : score>=34 ? "Balanced. Moderate load is reasonable." : "Run down. Prioritize easy movement and sleep.")
+      : (daily.length===0 ? "Pair your strap and sleep a night to get your first score." : "Building your baseline — a few more nights sharpens this.");
+
+    $("tileRhr").innerHTML = fmt0(last ? last.rhr : getEffectiveRhr()) + " <span>bpm</span>";
+    $("tileHrv").innerHTML = fmt0(last ? last.hrv : rmssd(state.liveRr.slice(-60))) + " <span>ms</span>";
+    $("tileSleep").innerHTML = fmt1(last ? last.sleepHours : null) + " <span>hrs</span>";
+
+    sparkline($("sparkRhr"), daily.slice(-14).map(d=>d.rhr).filter(v=>v!=null), "var(--accent)");
+    sparkline($("sparkHrv"), daily.slice(-14).map(d=>d.hrv).filter(v=>v!=null), "var(--accent)");
+    sparkline($("sparkSleep"), daily.slice(-14).map(d=>d.sleepHours).filter(v=>v!=null), "var(--accent)");
+    sparkline($("sparkHr"), state.todayHrSamples.slice(-60).map(s=>s.bpm), "var(--accent)");
+
+    sparkline($("trendRecovery"), daily.slice(-30).map(d=>d.recovery).filter(v=>v!=null), "var(--good)");
+    sparkline($("trendStrain"), daily.slice(-30).map(d=>d.strain).filter(v=>v!=null), "var(--accent)");
+    sparkline($("trendHrv"), daily.slice(-30).map(d=>d.hrv).filter(v=>v!=null), "var(--mid)");
+    sparkline($("trendRhr"), daily.slice(-30).map(d=>d.rhr).filter(v=>v!=null), "var(--low)");
+    sparkline($("sparkSleepBig"), daily.slice(-14).map(d=>d.sleepHours).filter(v=>v!=null), "var(--accent)");
+
+    if(last){
+      $("sleepDuration").textContent = last.sleepHours ? last.sleepHours.toFixed(1)+"h" : "--";
+      $("sleepAvgHr").textContent = last.rhr ? fmt0(last.rhr) : "--";
+      $("sleepAvgHrv").textContent = last.hrv ? fmt0(last.hrv) : "--";
+    }
+  }
+
+  /* ---------------- sleep tracking ---------------- */
+  function toggleSleep(){
+    if(!state.sleeping){
+      state.sleeping = true;
+      state.sleepStart = Date.now();
+      state.sleepHr = [];
+      state.sleepRr = [];
+      $("sleepToggleBtn").textContent = "Wake up";
+      tickSleepTimer();
+    } else {
+      state.sleeping = false;
+      finalizeSleepAndRecovery();
+      $("sleepToggleBtn").textContent = "Start sleep";
+      $("sleepTimer").textContent = "";
+    }
+  }
+  function tickSleepTimer(){
+    if(!state.sleeping) return;
+    const mins = Math.floor((Date.now()-state.sleepStart)/60000);
+    $("sleepTimer").textContent = `Asleep for ${Math.floor(mins/60)}h ${mins%60}m`;
+    setTimeout(tickSleepTimer, 30000);
+  }
+  async function finalizeSleepAndRecovery(){
+    const sleepHours = (Date.now()-state.sleepStart)/3600000;
+    const avgHr = mean(state.sleepHr.map(s=>s.bpm)) || null;
+    const hrv = rmssd(state.sleepRr) || rmssd(state.liveRr.slice(-60));
+    const rhr = state.sleepHr.length ? Math.min(...state.sleepHr.map(s=>s.bpm)) : getEffectiveRhr();
+    const date = todayKey();
+    const daily = await idbAll("dailyMetrics");
+    const hrvBaseline = rollingBaseline(daily, "hrv", 30);
+    const rhrBaseline = rollingBaseline(daily, "rhr", 30);
+    const recovery = recoveryScore(hrv, rhr, hrvBaseline, rhrBaseline, sleepHours);
+    const maxHr = estimateMaxHr(state.settings.age);
+    const strain = strainFromSamples(state.todayHrSamples, rhr, maxHr);
+    await idbPut("dailyMetrics", { date, sleepHours, hrv, rhr, avgHr, recovery, strain, ts: Date.now() });
+    state.todayHrSamples = [];
+    renderToday();
+    drawHypnogram();
+  }
+  function drawHypnogram(){
+    const svg = $("hypnogram");
+    svg.innerHTML = "";
+    if(!state.sleepHr.length) return;
+    const w = svg.clientWidth || 300, h = 60;
+    svg.setAttribute("viewBox",`0 0 ${w} ${h}`);
+    const bpms = state.sleepHr.map(s=>s.bpm);
+    const min = Math.min(...bpms), max = Math.max(...bpms), range=(max-min)||1;
+    // crude 3-band "stage" approximation from HR trough depth — not real accelerometer staging
+    let d = "";
+    state.sleepHr.forEach((s,i)=>{
+      const x = i/(state.sleepHr.length-1)*w;
+      const y = h - ((s.bpm-min)/range)*h;
+      d += (i===0?"M":"L") + x.toFixed(1)+","+y.toFixed(1)+" ";
+    });
+    const path = document.createElementNS("http://www.w3.org/2000/svg","path");
+    path.setAttribute("d",d.trim());
+    path.setAttribute("fill","none");
+    path.setAttribute("stroke","var(--accent)");
+    path.setAttribute("stroke-width","1.5");
+    svg.appendChild(path);
+  }
+
+  /* ---------------- WHOOP export import (physiological_cycles.csv / sleeps.csv / .zip) ---------------- */
+  function parseCsv(text){
+    const rows = [];
+    const lines = text.replace(/\r\n/g,"\n").split("\n").filter(l=>l.length);
+    if(!lines.length) return rows;
+    const headers = splitCsvLine(lines[0]);
+    for(let i=1;i<lines.length;i++){
+      const cells = splitCsvLine(lines[i]);
+      if(cells.length<2) continue;
+      const obj = {};
+      headers.forEach((h,idx)=> obj[h.trim()] = (cells[idx]!==undefined ? cells[idx].trim() : ""));
+      rows.push(obj);
+    }
+    return rows;
+  }
+  function splitCsvLine(line){
+    const out=[]; let cur=""; let inQuotes=false;
+    for(let i=0;i<line.length;i++){
+      const c = line[i];
+      if(c === '"'){ inQuotes = !inQuotes; continue; }
+      if(c === ',' && !inQuotes){ out.push(cur); cur=""; continue; }
+      cur += c;
+    }
+    out.push(cur);
+    return out;
+  }
+  const num = v => (v===undefined || v==="" || v===null) ? null : (isNaN(parseFloat(v)) ? null : parseFloat(v));
+  const dateKeyFromTs = ts => {
+    const d = new Date(ts);
+    if(isNaN(d.getTime())) return null;
+    return d.toISOString().slice(0,10);
+  };
+
+  async function importPhysiologicalCsv(text){
+    const rows = parseCsv(text);
+    let imported = 0;
+    for(const r of rows){
+      // key the record by the morning it was scored: Wake onset, falling back to cycle start
+      const anchor = r["Wake onset"] || r["Cycle start time"];
+      const date = dateKeyFromTs(anchor);
+      if(!date) continue;
+      const rec = {
+        date,
+        recovery: num(r["Recovery score %"]),
+        rhr: num(r["Resting heart rate (bpm)"]),
+        hrv: num(r["Heart rate variability (ms)"]),
+        strain: num(r["Day Strain"]),
+        sleepHours: num(r["Asleep duration (min)"]) != null ? num(r["Asleep duration (min)"])/60 : null,
+        skinTemp: num(r["Skin temp (celsius)"]),
+        spo2: num(r["Blood oxygen %"]),
+        respRate: num(r["Respiratory rate (rpm)"]),
+        sleepPerformance: num(r["Sleep performance %"]),
+        avgHr: num(r["Average HR (bpm)"]),
+        maxHr: num(r["Max HR (bpm)"]),
+        source: "whoop_export",
+        ts: Date.now()
+      };
+      // don't let an imported row clobber a same-day record Pulse already measured live
+      const existing = await idbGet("dailyMetrics", date);
+      if(existing && existing.source !== "whoop_export"){ continue; }
+      await idbPut("dailyMetrics", rec);
+      imported++;
+    }
+    return imported;
+  }
+
+  async function handleImportFiles(fileList){
+    const files = Array.from(fileList);
+    $("importStatus").textContent = "Importing…";
+    let totalImported = 0;
+    try{
+      for(const file of files){
+        if(file.name.toLowerCase().endsWith(".zip")){
+          if(typeof JSZip === "undefined"){
+            $("importStatus").textContent = "Couldn't load the zip reader — try uploading physiological_cycles.csv directly instead.";
+            continue;
+          }
+          const zip = await JSZip.loadAsync(file);
+          const entry = Object.keys(zip.files).find(n=> n.toLowerCase().endsWith("physiological_cycles.csv"));
+          if(entry){
+            const text = await zip.files[entry].async("string");
+            totalImported += await importPhysiologicalCsv(text);
+          }
+        } else if(file.name.toLowerCase().endsWith(".csv")){
+          const text = await file.text();
+          // accept the file regardless of exact name as long as it has the expected header
+          if(text.includes("Recovery score") || file.name.toLowerCase().includes("physiological")){
+            totalImported += await importPhysiologicalCsv(text);
+          }
+        }
+      }
+      $("importStatus").textContent = totalImported
+        ? `Imported ${totalImported} day${totalImported===1?"":"s"} of history.`
+        : "Nothing new to import — check you selected physiological_cycles.csv (or the export .zip).";
+      renderToday();
+    }catch(e){
+      console.error(e);
+      $("importStatus").textContent = "Import failed: " + (e.message||e);
+    }
+  }
+
+  /* ---------------- settings ---------------- */
+  async function loadSettings(){
+    const age = await idbGet("settings","age");
+    const rhr = await idbGet("settings","rhrOverride");
+    state.settings.age = age ? age.value : null;
+    state.settings.rhrOverride = rhr ? rhr.value : null;
+    if(age) $("inputAge").value = age.value;
+    if(rhr) $("inputRhr").value = rhr.value;
+  }
+  async function saveSettings(){
+    const age = parseFloat($("inputAge").value) || null;
+    const rhr = parseFloat($("inputRhr").value) || null;
+    state.settings.age = age;
+    state.settings.rhrOverride = rhr;
+    await idbPut("settings",{key:"age", value:age});
+    await idbPut("settings",{key:"rhrOverride", value:rhr});
+    $("saveSettingsBtn").textContent = "Saved";
+    setTimeout(()=> $("saveSettingsBtn").textContent = "Save", 1200);
+  }
+
+  /* ---------------- nav ---------------- */
+  function showScreen(name){
+    document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
+    document.querySelectorAll(".tab-btn").forEach(b=>b.classList.remove("active"));
+    $("screen-"+name).classList.add("active");
+    document.querySelector(`.tab-btn[data-screen="${name}"]`).classList.add("active");
+    const titles = {today:"Today", sleep:"Sleep", trends:"Trends", settings:"Connect"};
+    $("topTitle").textContent = titles[name];
+    if(name==="trends" || name==="today") renderToday();
+  }
+
+  /* ---------------- init ---------------- */
+  async function init(){
+    $("topDate").textContent = new Date().toLocaleDateString(undefined,{weekday:"long", month:"short", day:"numeric"});
+    try{ await openDb(); }catch(e){ console.error("DB failed", e); }
+    await loadSettings();
+    renderConnectionStatus();
+    await renderToday();
+
+    document.querySelectorAll(".tab-btn").forEach(b=> b.addEventListener("click", ()=>showScreen(b.dataset.screen)));
+    $("connectBtn").addEventListener("click", ()=>{
+      if(state.connected && state.device && state.device.gatt.connected){ state.device.gatt.disconnect(); }
+      else connectStrap();
+    });
+    $("quickConnectBtn").addEventListener("click", ()=>{ if(!state.connected) connectStrap(); });
+    $("sleepToggleBtn").addEventListener("click", toggleSleep);
+    $("saveSettingsBtn").addEventListener("click", saveSettings);
+    $("importInput").addEventListener("change", (e)=>{
+      if(e.target.files && e.target.files.length) handleImportFiles(e.target.files);
+    });
+    $("exportBtn").addEventListener("click", async ()=>{
+      const daily = await idbAll("dailyMetrics");
+      const hr = await idbAll("hrSamples");
+      const blob = new Blob([JSON.stringify({dailyMetrics:daily, hrSamples:hr}, null, 2)], {type:"application/json"});
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "pulse-export-"+todayKey()+".json";
+      a.click();
+    });
+    $("resetBtn").addEventListener("click", async ()=>{
+      if(confirm("Erase all local Pulse data? This can't be undone.")){
+        await idbClearAll();
+        location.reload();
+      }
+    });
+
+    setInterval(renderLive, 2000);
+  }
+  init();
+})();
+</script>
+</body>
+</html>
