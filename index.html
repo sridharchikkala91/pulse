@@ -656,23 +656,35 @@
       line("Device picked: " + device.name);
       const server = await device.gatt.connect();
       const service = await server.getPrimaryService(WHOOP_PROPRIETARY_SERVICE);
-      const notifyChar = await service.getCharacteristic("fd4b0003-cce1-4033-93ce-002d5875f58a");
-      await notifyChar.startNotifications();
-      notifyChar.addEventListener("characteristicvaluechanged", (e)=>{
-        const bytes = new Uint8Array(e.target.value.buffer);
-        const decoded = WhoopProtocol.decodeWhoop5Frame(bytes);
-        if(!decoded){ line("NOTIFY raw (unparsed): " + toHex(bytes)); return; }
-        line("NOTIFY decoded: cmd=" + decoded.cmd + " payload=[" + decoded.payload.join(",") + "] crc16Valid=" + decoded.crc16Valid + " crc32Valid=" + decoded.crc32Valid);
-        if(decoded.cmd === 7 && decoded.payload.length >= 31){
-          // struct "<BBBLLLLLLLL": 3 status bytes, then 8 LE u32 fields at payload offsets 3,7,11,15,19,23,27,31
-          const pay = decoded.payload;
-          const le32 = at => (pay[at]||0) | ((pay[at+1]||0)<<8) | ((pay[at+2]||0)<<16) | ((pay[at+3]||0)<<24);
-          const fwHarvard = [le32(3), le32(7), le32(11), le32(15)].join(".");
-          const fwBoylston = [le32(19), le32(23), le32(27), le32(31)].join(".");
-          line("  FW harvard: " + fwHarvard);
-          line("  FW boylston: " + fwBoylston);
+      const notifyUuids = [
+        "fd4b0003-cce1-4033-93ce-002d5875f58a",
+        "fd4b0004-cce1-4033-93ce-002d5875f58a",
+        "fd4b0005-cce1-4033-93ce-002d5875f58a",
+        "fd4b0007-cce1-4033-93ce-002d5875f58a"
+      ];
+      for(const uuid of notifyUuids){
+        try{
+          const c = await service.getCharacteristic(uuid);
+          await c.startNotifications();
+          c.addEventListener("characteristicvaluechanged", (e)=>{
+            const bytes = new Uint8Array(e.target.value.buffer);
+            const decoded = WhoopProtocol.decodeWhoop5Frame(bytes);
+            if(!decoded){ line("NOTIFY " + uuid.slice(0,8) + " raw (unparsed): " + toHex(bytes)); return; }
+            line("NOTIFY " + uuid.slice(0,8) + " decoded: cmd=" + decoded.cmd + " payload=[" + decoded.payload.join(",") + "] crc16Valid=" + decoded.crc16Valid + " crc32Valid=" + decoded.crc32Valid);
+            if(decoded.cmd === 7 && decoded.payload.length >= 31){
+              // struct "<BBBLLLLLLLL": 3 status bytes, then 8 LE u32 fields at payload offsets 3,7,11,15,19,23,27,31
+              const pay = decoded.payload;
+              const le32 = at => (pay[at]||0) | ((pay[at+1]||0)<<8) | ((pay[at+2]||0)<<16) | ((pay[at+3]||0)<<24);
+              const fwHarvard = [le32(3), le32(7), le32(11), le32(15)].join(".");
+              const fwBoylston = [le32(19), le32(23), le32(27), le32(31)].join(".");
+              line("  FW harvard: " + fwHarvard);
+              line("  FW boylston: " + fwBoylston);
+            }
+          });
+        }catch(e){
+          line("Could not subscribe to " + uuid.slice(0,8) + ": " + (e.message||e));
         }
-      });
+      }
       const cmdChar = await service.getCharacteristic("fd4b0002-cce1-4033-93ce-002d5875f58a");
       line("Writing CLIENT_HELLO...");
       await cmdChar.writeValueWithResponse(new Uint8Array(WhoopProtocol.CLIENT_HELLO));
