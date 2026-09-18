@@ -92,6 +92,27 @@ fails, log it as a CRC mismatch rather than throwing — malformed or
 partial BLE notifications are expected during exploration, and a
 throw would stop us from seeing subsequent frames.
 
+## Result (on real hardware, 2026-09-19)
+
+Slice 1 succeeded completely. On the real WHOOP 5AG0185866 strap, via
+WebBLE:
+1. `CLIENT_HELLO` was written to `…0002` with no error.
+2. The strap responded with two notifications on `…0003`, both `cmd=145`
+   (`0x91`, matching the hello's own cmd byte — a request/response echo).
+3. Both frames passed CRC16 and CRC32 validation in our decoder
+   (`crc16Valid=true`, `crc32Valid=true` on both) — proving the decoder
+   is parsing real frames correctly, not accepting garbage.
+4. The second frame's payload contains the strap's own serial number
+   as plain ASCII (`5AG0185866`, bytes 53,65,71,48,49,56,53,56,54,54),
+   plus what appears to be a longer hex-string device identifier and
+   several trailing numeric fields (likely version/build info) whose
+   exact schema is not yet known.
+
+**Conclusion:** the proprietary channel is fully viable, not just
+reachable. Next slice: fetch and decode `whoop_protocol.json` from
+NOOP's repo to get the real field schema for this response (and
+others), rather than guessing at the trailing numeric fields' meaning.
+
 ## Testing
 
 There's no way to unit-test against real strap behavior. Verification
