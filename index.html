@@ -718,6 +718,9 @@
         optionalServices: [BATTERY_SERVICE, WHOOP_PROPRIETARY_SERVICE]
       });
       line("Device picked: " + device.name);
+      device.addEventListener("gattserverdisconnected", ()=>{
+        line("*** GATT DISCONNECTED at " + new Date().toLocaleTimeString() + " (chunks so far: " + chunkCount + ") ***");
+      });
       const server = await device.gatt.connect();
       const service = await server.getPrimaryService(WHOOP_PROPRIETARY_SERVICE);
       const notifyUuids = [
