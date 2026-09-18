@@ -253,6 +253,13 @@
     <pre id="helloLog" class="small" style="white-space:pre-wrap; margin-top:10px; max-height:280px; overflow:auto; background:var(--surface-2); border-radius:10px; padding:10px;"></pre>
   </div>
 
+  <div class="section-title">Debug — battery level query</div>
+  <div class="card">
+    <p class="small muted" style="margin-bottom:10px;">Throwaway diagnostic. Does the full handshake, then sends GET_BATTERY_LEVEL — the first real custom command, not just the static hello.</p>
+    <button class="btn secondary" id="batteryBtn">Get battery level</button>
+    <pre id="batteryLog" class="small" style="white-space:pre-wrap; margin-top:10px; max-height:280px; overflow:auto; background:var(--surface-2); border-radius:10px; padding:10px;"></pre>
+  </div>
+
   <div class="section-title">Your baseline</div>
   <div class="card">
     <label class="field">
@@ -586,6 +593,46 @@
       line("CLIENT_HELLO written. Waiting for notifications (leave this open)...");
     }catch(e){
       line("HANDSHAKE TEST FAILED: " + (e && e.name ? e.name + ": " : "") + (e && e.message ? e.message : e));
+      console.error(e);
+    }
+  }
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+  async function getBatteryLevel(){
+    const log = $("batteryLog");
+    const line = s => { log.textContent += s + "\n"; log.scrollTop = log.scrollHeight; };
+    log.textContent = "";
+    line("Starting battery query at " + new Date().toLocaleTimeString());
+    try{
+      const device = await navigator.bluetooth.requestDevice({
+        filters: [{ services:[HR_SERVICE] }],
+        optionalServices: [BATTERY_SERVICE, WHOOP_PROPRIETARY_SERVICE]
+      });
+      line("Device picked: " + device.name);
+      const server = await device.gatt.connect();
+      const service = await server.getPrimaryService(WHOOP_PROPRIETARY_SERVICE);
+      const notifyChar = await service.getCharacteristic("fd4b0003-cce1-4033-93ce-002d5875f58a");
+      await notifyChar.startNotifications();
+      notifyChar.addEventListener("characteristicvaluechanged", (e)=>{
+        const bytes = new Uint8Array(e.target.value.buffer);
+        const decoded = WhoopProtocol.decodeWhoop5Frame(bytes);
+        if(!decoded){ line("NOTIFY raw (unparsed): " + toHex(bytes)); return; }
+        line("NOTIFY decoded: cmd=" + decoded.cmd + " payload=[" + decoded.payload.join(",") + "] crc16Valid=" + decoded.crc16Valid + " crc32Valid=" + decoded.crc32Valid);
+        if(decoded.cmd === 26 && decoded.payload.length >= 4){
+          const raw = decoded.payload[2] | (decoded.payload[3] << 8);
+          line("  BATTERY: " + (raw/10) + "%");
+        }
+      });
+      const cmdChar = await service.getCharacteristic("fd4b0002-cce1-4033-93ce-002d5875f58a");
+      line("Writing CLIENT_HELLO...");
+      await cmdChar.writeValueWithResponse(new Uint8Array(WhoopProtocol.CLIENT_HELLO));
+      await sleep(1500);
+      const batteryFrame = WhoopProtocol.encodeWhoop5Command(26, [0x00]);
+      line("Writing GET_BATTERY_LEVEL: " + toHex(batteryFrame));
+      await cmdChar.writeValueWithResponse(new Uint8Array(batteryFrame));
+      line("GET_BATTERY_LEVEL written. Waiting for response...");
+    }catch(e){
+      line("BATTERY QUERY FAILED: " + (e && e.name ? e.name + ": " : "") + (e && e.message ? e.message : e));
       console.error(e);
     }
   }
@@ -927,6 +974,7 @@
     $("quickConnectBtn").addEventListener("click", ()=>{ if(!state.connected) connectStrap(); });
     $("probeBtn").addEventListener("click", probeProprietaryChannel);
     $("helloBtn").addEventListener("click", testClientHelloHandshake);
+    $("batteryBtn").addEventListener("click", getBatteryLevel);
     $("sleepToggleBtn").addEventListener("click", toggleSleep);
     $("saveSettingsBtn").addEventListener("click", saveSettings);
     $("importInput").addEventListener("change", (e)=>{
