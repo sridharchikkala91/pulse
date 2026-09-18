@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Pulse — your strap, your data</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="whoop-protocol.js"></script>
 <style>
   :root{
     color-scheme: dark;
@@ -243,6 +244,13 @@
     <p class="small muted" style="margin-bottom:10px;">Throwaway diagnostic. Tests whether the proprietary WHOOP service is reachable at all — not real functionality.</p>
     <button class="btn secondary" id="probeBtn">Test proprietary channel</button>
     <pre id="probeLog" class="small" style="white-space:pre-wrap; margin-top:10px; max-height:220px; overflow:auto; background:var(--surface-2); border-radius:10px; padding:10px;"></pre>
+  </div>
+
+  <div class="section-title">Debug — CLIENT_HELLO handshake</div>
+  <div class="card">
+    <p class="small muted" style="margin-bottom:10px;">Throwaway diagnostic. Sends WHOOP's static CLIENT_HELLO frame and logs every notification received afterward, decoded where possible.</p>
+    <button class="btn secondary" id="helloBtn">Test CLIENT_HELLO handshake</button>
+    <pre id="helloLog" class="small" style="white-space:pre-wrap; margin-top:10px; max-height:280px; overflow:auto; background:var(--surface-2); border-radius:10px; padding:10px;"></pre>
   </div>
 
   <div class="section-title">Your baseline</div>
@@ -525,6 +533,59 @@
       server.disconnect();
     }catch(e){
       line("PROBE FAILED: " + (e && e.name ? e.name + ": " : "") + (e && e.message ? e.message : e));
+      console.error(e);
+    }
+  }
+  const toHex = bytes => Array.from(bytes).map(b => b.toString(16).padStart(2,"0")).join(" ");
+
+  async function testClientHelloHandshake(){
+    const log = $("helloLog");
+    const line = s => { log.textContent += s + "\n"; log.scrollTop = log.scrollHeight; };
+    log.textContent = "";
+    line("Starting handshake test at " + new Date().toLocaleTimeString());
+    try{
+      line("Requesting device (filter: HR service)...");
+      const device = await navigator.bluetooth.requestDevice({
+        filters: [{ services:[HR_SERVICE] }],
+        optionalServices: [BATTERY_SERVICE, WHOOP_PROPRIETARY_SERVICE]
+      });
+      line("Device picked: " + device.name);
+      const server = await device.gatt.connect();
+      line("GATT connected. Getting proprietary service...");
+      const service = await server.getPrimaryService(WHOOP_PROPRIETARY_SERVICE);
+      const notifyUuids = [
+        "fd4b0003-cce1-4033-93ce-002d5875f58a",
+        "fd4b0004-cce1-4033-93ce-002d5875f58a",
+        "fd4b0005-cce1-4033-93ce-002d5875f58a",
+        "fd4b0007-cce1-4033-93ce-002d5875f58a"
+      ];
+      for(const uuid of notifyUuids){
+        try{
+          const c = await service.getCharacteristic(uuid);
+          await c.startNotifications();
+          c.addEventListener("characteristicvaluechanged", (e)=>{
+            const bytes = new Uint8Array(e.target.value.buffer);
+            line("NOTIFY " + uuid.slice(0,8) + " raw: " + toHex(bytes));
+            const decoded = WhoopProtocol.decodeWhoop5Frame(bytes);
+            if(decoded){
+              line("  decoded: type=" + decoded.type + " seq=" + decoded.seq + " cmd=" + decoded.cmd +
+                   " payload=[" + decoded.payload.join(",") + "] crc16Valid=" + decoded.crc16Valid +
+                   " crc32Valid=" + decoded.crc32Valid);
+            } else {
+              line("  (did not parse as a WHOOP 5.0 envelope)");
+            }
+          });
+          line("Subscribed to notifications on " + uuid.slice(0,8));
+        }catch(e){
+          line("Could not subscribe to " + uuid.slice(0,8) + ": " + (e.message||e));
+        }
+      }
+      const cmdChar = await service.getCharacteristic("fd4b0002-cce1-4033-93ce-002d5875f58a");
+      line("Writing CLIENT_HELLO: " + toHex(WhoopProtocol.CLIENT_HELLO));
+      await cmdChar.writeValueWithResponse(new Uint8Array(WhoopProtocol.CLIENT_HELLO));
+      line("CLIENT_HELLO written. Waiting for notifications (leave this open)...");
+    }catch(e){
+      line("HANDSHAKE TEST FAILED: " + (e && e.name ? e.name + ": " : "") + (e && e.message ? e.message : e));
       console.error(e);
     }
   }
@@ -865,6 +926,7 @@
     });
     $("quickConnectBtn").addEventListener("click", ()=>{ if(!state.connected) connectStrap(); });
     $("probeBtn").addEventListener("click", probeProprietaryChannel);
+    $("helloBtn").addEventListener("click", testClientHelloHandshake);
     $("sleepToggleBtn").addEventListener("click", toggleSleep);
     $("saveSettingsBtn").addEventListener("click", saveSettings);
     $("importInput").addEventListener("change", (e)=>{
