@@ -507,10 +507,10 @@
     log.textContent = "";
     line("Starting probe at " + new Date().toLocaleTimeString());
     try{
-      line("Requesting device (filter: proprietary service)...");
+      line("Requesting device (filter: HR service, which we know is advertised)...");
       const device = await navigator.bluetooth.requestDevice({
-        filters: [{ services:[WHOOP_PROPRIETARY_SERVICE] }],
-        optionalServices: [HR_SERVICE, BATTERY_SERVICE]
+        filters: [{ services:[HR_SERVICE] }],
+        optionalServices: [BATTERY_SERVICE, WHOOP_PROPRIETARY_SERVICE]
       });
       line("Device picked: " + device.name);
       line("Connecting GATT server...");
