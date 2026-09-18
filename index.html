@@ -260,6 +260,13 @@
     <pre id="batteryLog" class="small" style="white-space:pre-wrap; margin-top:10px; max-height:280px; overflow:auto; background:var(--surface-2); border-radius:10px; padding:10px;"></pre>
   </div>
 
+  <div class="section-title">Debug — firmware version query</div>
+  <div class="card">
+    <p class="small muted" style="margin-bottom:10px;">Throwaway diagnostic. Sends REPORT_VERSION_INFO and decodes the firmware version fields.</p>
+    <button class="btn secondary" id="versionBtn">Get firmware version</button>
+    <pre id="versionLog" class="small" style="white-space:pre-wrap; margin-top:10px; max-height:280px; overflow:auto; background:var(--surface-2); border-radius:10px; padding:10px;"></pre>
+  </div>
+
   <div class="section-title">Your baseline</div>
   <div class="card">
     <label class="field">
@@ -636,6 +643,49 @@
       console.error(e);
     }
   }
+  async function getFirmwareVersion(){
+    const log = $("versionLog");
+    const line = s => { log.textContent += s + "\n"; log.scrollTop = log.scrollHeight; };
+    log.textContent = "";
+    line("Starting version query at " + new Date().toLocaleTimeString());
+    try{
+      const device = await navigator.bluetooth.requestDevice({
+        filters: [{ services:[HR_SERVICE] }],
+        optionalServices: [BATTERY_SERVICE, WHOOP_PROPRIETARY_SERVICE]
+      });
+      line("Device picked: " + device.name);
+      const server = await device.gatt.connect();
+      const service = await server.getPrimaryService(WHOOP_PROPRIETARY_SERVICE);
+      const notifyChar = await service.getCharacteristic("fd4b0003-cce1-4033-93ce-002d5875f58a");
+      await notifyChar.startNotifications();
+      notifyChar.addEventListener("characteristicvaluechanged", (e)=>{
+        const bytes = new Uint8Array(e.target.value.buffer);
+        const decoded = WhoopProtocol.decodeWhoop5Frame(bytes);
+        if(!decoded){ line("NOTIFY raw (unparsed): " + toHex(bytes)); return; }
+        line("NOTIFY decoded: cmd=" + decoded.cmd + " payload=[" + decoded.payload.join(",") + "] crc16Valid=" + decoded.crc16Valid + " crc32Valid=" + decoded.crc32Valid);
+        if(decoded.cmd === 7 && decoded.payload.length >= 31){
+          // struct "<BBBLLLLLLLL": 3 status bytes, then 8 LE u32 fields at payload offsets 3,7,11,15,19,23,27,31
+          const pay = decoded.payload;
+          const le32 = at => (pay[at]||0) | ((pay[at+1]||0)<<8) | ((pay[at+2]||0)<<16) | ((pay[at+3]||0)<<24);
+          const fwHarvard = [le32(3), le32(7), le32(11), le32(15)].join(".");
+          const fwBoylston = [le32(19), le32(23), le32(27), le32(31)].join(".");
+          line("  FW harvard: " + fwHarvard);
+          line("  FW boylston: " + fwBoylston);
+        }
+      });
+      const cmdChar = await service.getCharacteristic("fd4b0002-cce1-4033-93ce-002d5875f58a");
+      line("Writing CLIENT_HELLO...");
+      await cmdChar.writeValueWithResponse(new Uint8Array(WhoopProtocol.CLIENT_HELLO));
+      await sleep(1500);
+      const versionFrame = WhoopProtocol.encodeWhoop5Command(7, []);
+      line("Writing REPORT_VERSION_INFO: " + toHex(versionFrame));
+      await cmdChar.writeValueWithResponse(new Uint8Array(versionFrame));
+      line("REPORT_VERSION_INFO written. Waiting for response...");
+    }catch(e){
+      line("VERSION QUERY FAILED: " + (e && e.name ? e.name + ": " : "") + (e && e.message ? e.message : e));
+      console.error(e);
+    }
+  }
   function onDisconnected(){
     state.connected = false;
     renderConnectionStatus();
@@ -975,6 +1025,7 @@
     $("probeBtn").addEventListener("click", probeProprietaryChannel);
     $("helloBtn").addEventListener("click", testClientHelloHandshake);
     $("batteryBtn").addEventListener("click", getBatteryLevel);
+    $("versionBtn").addEventListener("click", getFirmwareVersion);
     $("sleepToggleBtn").addEventListener("click", toggleSleep);
     $("saveSettingsBtn").addEventListener("click", saveSettings);
     $("importInput").addEventListener("change", (e)=>{
