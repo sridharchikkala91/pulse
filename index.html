@@ -255,6 +255,13 @@
     <p class="small muted" style="margin-top:10px;">Unpair the strap from the official WHOOP app first — it holds one Bluetooth connection at a time. Live heart rate uses the strap's standard Bluetooth heart-rate profile, so no account or subscription is involved.</p>
   </div>
 
+  <div class="section-title">Debug — proprietary channel probe</div>
+  <div class="card">
+    <p class="small muted" style="margin-bottom:10px;">Throwaway diagnostic. Tests whether the proprietary WHOOP service is reachable at all — not real functionality.</p>
+    <button class="btn secondary" id="probeBtn">Test proprietary channel</button>
+    <pre id="probeLog" class="small" style="white-space:pre-wrap; margin-top:10px; max-height:220px; overflow:auto; background:var(--surface-2); border-radius:10px; padding:10px;"></pre>
+  </div>
+
   <div class="section-title">Your baseline</div>
   <div class="card">
     <label class="field">
@@ -443,6 +450,7 @@
 
   /* ---------------- BLE (standard Bluetooth Heart Rate + Battery services) ---------------- */
   const HR_SERVICE = 0x180D, HR_MEASUREMENT = 0x2A37, BATTERY_SERVICE = 0x180F, BATTERY_LEVEL = 0x2A19;
+  const WHOOP_PROPRIETARY_SERVICE = "fd4b0001-cce1-4033-93ce-002d5875f58a"; // WHOOP 5.0/MG proprietary channel (spike probe only)
 
   function parseHrMeasurement(dataView){
     const flags = dataView.getUint8(0);
@@ -488,6 +496,33 @@
       if(e && e.name !== "NotFoundError"){
         alert("Couldn't connect: " + (e.message||e));
       }
+    }
+  }
+  async function probeProprietaryChannel(){
+    const log = $("probeLog");
+    const line = s => { log.textContent += s + "\n"; log.scrollTop = log.scrollHeight; };
+    log.textContent = "";
+    line("Starting probe at " + new Date().toLocaleTimeString());
+    try{
+      line("Requesting device (filter: proprietary service)...");
+      const device = await navigator.bluetooth.requestDevice({
+        filters: [{ services:[WHOOP_PROPRIETARY_SERVICE] }],
+        optionalServices: [HR_SERVICE, BATTERY_SERVICE]
+      });
+      line("Device picked: " + device.name);
+      line("Connecting GATT server...");
+      const server = await device.gatt.connect();
+      line("GATT connected. Requesting proprietary service...");
+      const service = await server.getPrimaryService(WHOOP_PROPRIETARY_SERVICE);
+      line("Got proprietary service. Listing characteristics...");
+      const chars = await service.getCharacteristics();
+      line("Found " + chars.length + " characteristic(s):");
+      chars.forEach(c => line("  " + c.uuid + " props=" + JSON.stringify(c.properties)));
+      line("PROBE SUCCEEDED.");
+      server.disconnect();
+    }catch(e){
+      line("PROBE FAILED: " + (e && e.name ? e.name + ": " : "") + (e && e.message ? e.message : e));
+      console.error(e);
     }
   }
   function onDisconnected(){
@@ -818,6 +853,7 @@
       else connectStrap();
     });
     $("quickConnectBtn").addEventListener("click", ()=>{ if(!state.connected) connectStrap(); });
+    $("probeBtn").addEventListener("click", probeProprietaryChannel);
     $("sleepToggleBtn").addEventListener("click", toggleSleep);
     $("saveSettingsBtn").addEventListener("click", saveSettings);
     $("importInput").addEventListener("change", (e)=>{
