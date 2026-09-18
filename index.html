@@ -689,7 +689,7 @@
       line("Writing CLIENT_HELLO...");
       await cmdChar.writeValueWithResponse(new Uint8Array(WhoopProtocol.CLIENT_HELLO));
       await sleep(1500);
-      const versionFrame = WhoopProtocol.encodeWhoop5Command(7, []);
+      const versionFrame = WhoopProtocol.encodeWhoop5Command(7, [0x01]);
       line("Writing REPORT_VERSION_INFO: " + toHex(versionFrame));
       await cmdChar.writeValueWithResponse(new Uint8Array(versionFrame));
       line("REPORT_VERSION_INFO written. Waiting for response...");
