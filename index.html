@@ -205,7 +205,12 @@
         <div class="k small muted">Avg HRV</div>
         <div class="v" id="sleepAvgHrv" style="font-family:var(--font-display); font-size:22px;">--</div>
       </div>
+      <div>
+        <div class="k small muted">Skin temp</div>
+        <div class="v" id="sleepSkinTemp" style="font-family:var(--font-display); font-size:22px;">--</div>
+      </div>
     </div>
+    <div class="small muted" id="sleepSource" style="margin-top:10px;"></div>
     <svg class="hypnogram" id="hypnogram" style="margin-top:14px;"></svg>
   </div>
 
@@ -237,6 +242,13 @@
     </div>
     <button class="btn" id="connectBtn">Connect strap</button>
     <p class="small muted" style="margin-top:10px;">Unpair the strap from the official WHOOP app first — it holds one Bluetooth connection at a time. Live heart rate uses the strap's standard Bluetooth heart-rate profile, so no account or subscription is involved.</p>
+  </div>
+
+  <div class="section-title">Sync sleep &amp; skin temperature</div>
+  <div class="card">
+    <p class="small muted" style="margin-bottom:10px;">Pulls real sleep and skin-temperature history straight off the strap — automatically detected, not manually timed. Can take a few minutes for a lot of history; safe to re-run any time.</p>
+    <button class="btn" id="syncBtn">Sync now</button>
+    <div class="small muted" id="syncStatus" style="margin-top:10px;"></div>
   </div>
 
   <div class="section-title">Debug — proprietary channel probe</div>
@@ -707,6 +719,144 @@
       console.error(e);
     }
   }
+  // Merge same-sleepState=="sleep" samples into sessions, bridging gaps up to
+  // 5 minutes (brief dropped samples/BLE hiccups), and drop anything under
+  // 30 minutes (noise, not a real sleep period).
+  function extractSleepSessions(samples){
+    const sorted = samples.slice().sort((a,b)=>a.timestamp-b.timestamp);
+    const GAP_MERGE_SEC = 300;
+    const sessions = [];
+    let cur = null;
+    for(const s of sorted){
+      if(s.sleepState === 2){
+        if(cur && (s.timestamp - cur.endTs) <= GAP_MERGE_SEC){
+          cur.endTs = s.timestamp;
+          cur.skinTemps.push(s.skinTempC);
+        } else {
+          if(cur) sessions.push(cur);
+          cur = { startTs: s.timestamp, endTs: s.timestamp, skinTemps: [s.skinTempC] };
+        }
+      } else if(cur && (s.timestamp - cur.endTs) > GAP_MERGE_SEC){
+        sessions.push(cur);
+        cur = null;
+      }
+    }
+    if(cur) sessions.push(cur);
+    return sessions.filter(sess => (sess.endTs - sess.startTs) >= 1800);
+  }
+
+  // One dailyMetrics record per date (keyed by wake time, matching manual
+  // sleep's convention) — the longest session wins if more than one lands
+  // on the same date (naps vs. main sleep).
+  function sessionsToDaily(sessions){
+    const byDate = {};
+    for(const sess of sessions){
+      const date = todayKey(new Date(sess.endTs*1000));
+      const hours = (sess.endTs - sess.startTs)/3600;
+      const validTemps = sess.skinTemps.filter(t=>t!=null);
+      const avgTemp = validTemps.length ? mean(validTemps) : null;
+      if(!byDate[date] || byDate[date].hours < hours) byDate[date] = { date, hours, avgTemp };
+    }
+    return Object.values(byDate);
+  }
+
+  async function saveSyncedDays(dailyResults){
+    for(const d of dailyResults){
+      const existing = await idbGet("dailyMetrics", d.date) || { date: d.date };
+      existing.sleepHours = d.hours;
+      existing.skinTemp = d.avgTemp;
+      existing.source = "synced";
+      existing.ts = Date.now();
+      await idbPut("dailyMetrics", existing);
+    }
+  }
+
+  async function syncSleepData(){
+    const status = $("syncStatus");
+    const setStatus = s => { status.textContent = s; };
+    setStatus("Starting sync...");
+    let chunkCount = 0;
+    let cmdChar = null;
+    let finished = false;
+    const samples = [];
+
+    async function finishSync(reason){
+      if(finished) return;
+      finished = true;
+      setStatus("Processing " + samples.length + " records...");
+      const sessions = extractSleepSessions(samples);
+      const dailyResults = sessionsToDaily(sessions);
+      await saveSyncedDays(dailyResults);
+      await renderToday();
+      const droppedNote = reason === "disconnected" ? " — connection dropped before finishing, partial data saved" : "";
+      if(dailyResults.length){
+        const summary = dailyResults.map(d=>d.date+" ("+d.hours.toFixed(1)+"h)").join(", ");
+        setStatus("Synced " + dailyResults.length + " night(s): " + summary + droppedNote);
+      } else {
+        setStatus("Sync finished but found no qualifying sleep sessions in " + samples.length + " records" + droppedNote);
+      }
+    }
+
+    try{
+      const device = await navigator.bluetooth.requestDevice({
+        filters: [{ services:[HR_SERVICE] }],
+        optionalServices: [BATTERY_SERVICE, WHOOP_PROPRIETARY_SERVICE]
+      });
+      setStatus("Connected to " + device.name + ". Starting offload...");
+      device.addEventListener("gattserverdisconnected", ()=>{ finishSync("disconnected"); });
+      const server = await device.gatt.connect();
+      const service = await server.getPrimaryService(WHOOP_PROPRIETARY_SERVICE);
+      const notifyUuids = [
+        "fd4b0003-cce1-4033-93ce-002d5875f58a",
+        "fd4b0004-cce1-4033-93ce-002d5875f58a",
+        "fd4b0005-cce1-4033-93ce-002d5875f58a",
+        "fd4b0007-cce1-4033-93ce-002d5875f58a"
+      ];
+      for(const uuid of notifyUuids){
+        try{
+          const c = await service.getCharacteristic(uuid);
+          await c.startNotifications();
+          c.addEventListener("characteristicvaluechanged", async (e)=>{
+            const bytes = new Uint8Array(e.target.value.buffer);
+            const decoded = WhoopProtocol.decodeWhoop5Frame(bytes);
+            if(!decoded) return;
+            if(decoded.type === 49){
+              const sub = decoded.cmd;
+              if(sub === 2){
+                const pay = decoded.payload;
+                if(pay.length >= 18){
+                  const token = pay.slice(10, 18);
+                  try{
+                    await cmdChar.writeValueWithResponse(new Uint8Array(WhoopProtocol.encodeWhoop5Command(0x17, [0x01, ...token])));
+                  }catch(ackErr){ console.error(ackErr); }
+                }
+              } else if(sub === 3){
+                finishSync("complete");
+              }
+            } else if(decoded.type === 47){
+              chunkCount++;
+              const sample = WhoopProtocol.decodeGen5HistorySample(decoded.payload);
+              if(sample) samples.push(sample);
+              if(chunkCount % 200 === 0) setStatus("Pulling history... " + chunkCount + " records so far");
+            }
+          });
+        }catch(e){
+          console.error(e);
+        }
+      }
+      cmdChar = await service.getCharacteristic("fd4b0002-cce1-4033-93ce-002d5875f58a");
+      await cmdChar.writeValueWithResponse(new Uint8Array(WhoopProtocol.CLIENT_HELLO));
+      await sleep(1500);
+      await cmdChar.writeValueWithResponse(new Uint8Array(WhoopProtocol.encodeWhoop5Command(0x22, [0x00])));
+      await sleep(1500);
+      await cmdChar.writeValueWithResponse(new Uint8Array(WhoopProtocol.encodeWhoop5Command(0x16, [0x00])));
+      setStatus("Pulling history... 0 records so far");
+    }catch(e){
+      setStatus("Sync failed: " + (e && e.message ? e.message : e));
+      console.error(e);
+    }
+  }
+
   async function pullHistoricalData(){
     const log = $("offloadLog");
     const line = s => { log.textContent += s + "\n"; log.scrollTop = log.scrollHeight; };
@@ -942,6 +1092,10 @@
       $("sleepDuration").textContent = last.sleepHours ? last.sleepHours.toFixed(1)+"h" : "--";
       $("sleepAvgHr").textContent = last.rhr ? fmt0(last.rhr) : "--";
       $("sleepAvgHrv").textContent = last.hrv ? fmt0(last.hrv) : "--";
+      $("sleepSkinTemp").textContent = last.skinTemp!=null ? last.skinTemp.toFixed(1)+"°C" : "--";
+      $("sleepSource").textContent = last.source === "synced"
+        ? "Auto-detected from strap sync"
+        : last.source === "whoop_export" ? "From WHOOP data export" : "Manually timed";
     }
   }
 
@@ -979,7 +1133,7 @@
     const recovery = recoveryScore(hrv, rhr, hrvBaseline, rhrBaseline, sleepHours);
     const maxHr = estimateMaxHr(state.settings.age);
     const strain = strainFromSamples(state.todayHrSamples, rhr, maxHr);
-    await idbPut("dailyMetrics", { date, sleepHours, hrv, rhr, avgHr, recovery, strain, ts: Date.now() });
+    await idbPut("dailyMetrics", { date, sleepHours, hrv, rhr, avgHr, recovery, strain, source: "manual", ts: Date.now() });
     state.todayHrSamples = [];
     renderToday();
     drawHypnogram();
@@ -1153,6 +1307,7 @@
       else connectStrap();
     });
     $("quickConnectBtn").addEventListener("click", ()=>{ if(!state.connected) connectStrap(); });
+    $("syncBtn").addEventListener("click", syncSleepData);
     $("probeBtn").addEventListener("click", probeProprietaryChannel);
     $("helloBtn").addEventListener("click", testClientHelloHandshake);
     $("batteryBtn").addEventListener("click", getBatteryLevel);
