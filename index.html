@@ -768,7 +768,15 @@
               if(chunkCount <= 3){
                 const box = $("offloadFirstChunks");
                 if(box.textContent === "(none yet)") box.textContent = "";
-                box.textContent += "chunk #" + chunkCount + " (" + decoded.payload.length + " bytes):\n" + toHex(decoded.payload) + "\n\n";
+                let entry = "chunk #" + chunkCount + " (" + decoded.payload.length + " bytes):\n" + toHex(decoded.payload);
+                const sample = WhoopProtocol.decodeGen5HistorySample(decoded.payload);
+                if(sample){
+                  entry += "\n  decoded: " + new Date(sample.timestamp*1000).toISOString() +
+                    " sleep=" + sample.sleepStateName +
+                    " skinTemp=" + (sample.skinTempC!=null ? sample.skinTempC+"C" : "unavailable") +
+                    " spo2raw=" + sample.spo2CandidateRaw;
+                }
+                box.textContent += entry + "\n\n";
                 if(chunkCount === 3) alert("First 3 historical data chunks captured — see the box above the log. Screenshot or copy that box.");
               } else if(chunkCount % 20 === 0){
                 line("HISTORICAL_DATA: " + chunkCount + " chunks received so far...");

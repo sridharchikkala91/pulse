@@ -93,7 +93,53 @@
     return [...header, c16 & 0xFF, (c16>>>8)&0xFF, ...inner, ...crc32Bytes];
   }
 
-  const api = { crc8, crc32, crc16Modbus, decodeWhoop5Frame, encodeWhoop5Command, CLIENT_HELLO, OUTBOUND_DIRECTION_MARKER };
+  function i16(b, at){ const v = b[at] | (b[at+1]<<8); return v >= 0x8000 ? v - 0x10000 : v; }
+  function u16(b, at){ return b[at] | (b[at+1]<<8); }
+  function u32(b, at){ return (b[at] | (b[at+1]<<8) | (b[at+2]<<16) | (b[at+3]<<24)) >>> 0; }
+
+  const SLEEP_STATE_NAMES = ["wake", "still", "sleep", "up"];
+
+  // Decodes a Gen5HistorySample from HISTORICAL_DATA (type 47) payload bytes
+  // (the array already has the 3-byte [type,seq,cmd] prefix stripped, so
+  // payload[N] here = gen5_records.dart's documented `inner[N+3]`).
+  //
+  // Field offsets and scales sourced from OpenStrap/protocol's
+  // gen5_records.dart (read directly, not summarized) and verified against
+  // real captured data from this strap on 2026-09-19: the decoded timestamp
+  // landed at ~1:22am local time with sleepState="sleep" and a plausible
+  // 34.3C skin temperature, and the three per-channel status words showed
+  // channel indices 0/1/2 in sequence exactly as documented.
+  //
+  // SpO2 is deliberately left as a raw byte, not a percentage — the source
+  // project explicitly states the encoding isn't pinned down and refuses to
+  // publish it as a real SpO2 value. Do the same here.
+  function decodeGen5HistorySample(payload){
+    if(payload.length < 72) return null;
+    const timestamp = u32(payload, 4);
+    const tempAux1C = i16(payload, 58) / 10;
+    const tempAux2C = i16(payload, 60) / 10;
+    const skinTempRaw = i16(payload, 62);
+    const skinTempAvailable = skinTempRaw !== -5000;
+    const statusWord0 = u16(payload, 64);
+    const statusWord1 = u16(payload, 66);
+    const statusWord2 = u16(payload, 68);
+    const sleepStateByte = payload[70];
+    const sleepState = (sleepStateByte >> 4) & 0x3;
+    const spo2CandidateRaw = payload[71];
+    return {
+      timestamp,
+      tempAux1C, tempAux2C,
+      skinTempC: skinTempAvailable ? skinTempRaw / 100 : null,
+      statusWord0, statusWord1, statusWord2,
+      sleepState, sleepStateName: SLEEP_STATE_NAMES[sleepState] || "unknown",
+      spo2CandidateRaw
+    };
+  }
+
+  const api = {
+    crc8, crc32, crc16Modbus, decodeWhoop5Frame, encodeWhoop5Command,
+    decodeGen5HistorySample, CLIENT_HELLO, OUTBOUND_DIRECTION_MARKER
+  };
   if(typeof module !== "undefined" && module.exports){
     module.exports = api;
   } else {
