@@ -172,6 +172,57 @@ Respiratory rate: not found anywhere in `gen5_records.dart` in this
 session's research — still completely unlocated, separate research
 task.
 
+## Historical-data offload: built and working (2026-09-19)
+
+Despite the "needs its own design cycle" note above, this got built
+same-session once real hardware feedback made the path clear. Full
+plumbing works end-to-end on the real strap:
+
+- `GET_DATA_RANGE` and `SEND_HISTORICAL_DATA` both needed `[0x00]`
+  payloads, not the empty payload OpenStrap/protocol's gen5 builders
+  use (that claim wasn't hardware-verified in that source, unlike the
+  hello — and turned out wrong for this strap). Every command that
+  has ever gotten a response on this strap has used a non-empty
+  single-byte payload; `REPORT_VERSION_INFO` (cmd=7) remains parked,
+  having failed with both empty and `[0x01]`.
+- `METADATA` (type 49) sync markers decode correctly using
+  `control.dart`'s `parseMetadata` byte layout: sub-type @
+  `payload[-1]`... concretely, in our own payload-after-cmd indexing:
+  HISTORY_START=1 (informational), HISTORY_END=2 (extract 8-byte
+  token from `payload[10:18]`, ACK via `HISTORICAL_DATA_RESULT`
+  (cmd=0x17) with `[0x01, ...token]`), HISTORY_COMPLETE=3 (stop
+  ACKing).
+- A real run pulled 17,760+ `HISTORICAL_DATA` chunks across dozens of
+  HISTORY_END/ACK/HISTORY_START cycles, each ACK confirmed successful
+  by the strap (`cmd=23 payload=[1,1,...]`). Connection eventually
+  dropped (likely iOS backgrounding WebBLE) before a final
+  HISTORY_COMPLETE — a `gattserverdisconnected` listener was added so
+  future runs log exactly when/why this happens.
+- `decodeGen5HistorySample(payload)` in `whoop-protocol.js` decodes:
+  `timestamp` (u32 LE unix seconds @ payload[4]), `tempAux1C`/
+  `tempAux2C` (fuel-gauge cell/ambient temps), `skinTempC` (signed,
+  ÷100, -50.00°C sentinel = unavailable), `sleepState`/
+  `sleepStateName` (0-3: wake/still/sleep/up), `spo2CandidateRaw`
+  (raw byte, deliberately not surfaced as a percentage — encoding
+  unconfirmed, same caution as the source project). All fields
+  verified against a real captured chunk: timestamp landed at ~1:22am
+  local time with sleepState="sleep" and a plausible 34.3°C skin
+  temperature — this is genuinely the user's own overnight data,
+  correctly decoded.
+- Golden test added using that exact real chunk as a fixture
+  (`whoop-protocol.test.js`). Caught a real transcription bug (2 bytes
+  dropped hand-copying the fixture) before it shipped — fixed by
+  regenerating the byte array programmatically from the original
+  captured hex string rather than re-transcribing by hand. Worth
+  remembering as a general practice for future large hex fixtures.
+
+**Still not done:** decoding the rest of `gen5_records.dart`'s many
+versioned decoders (V18/V20/V21/V22/V26 — optical waveforms, IMU
+buffers, research records) — only the single `Gen5HistorySample`
+shape has been decoded so far. Respiratory rate's byte layout is
+still unlocated. No UI wiring yet — this is all still debug-tool-only,
+not surfaced in the real Sleep/Today screens.
+
 ## Testing
 
 There's no way to unit-test against real strap behavior. Verification
