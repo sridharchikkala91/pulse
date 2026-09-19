@@ -1,0 +1,44 @@
+name: WhoopDiagnostic
+options:
+  bundleIdPrefix: com.pulsewhoop
+  deploymentTarget:
+    iOS: "16.0"
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+targets:
+  WhoopDiagnostic:
+    type: application
+    platform: iOS
+    sources:
+      - path: WhoopDiagnostic
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.pulsewhoop.WhoopDiagnostic
+        INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription: "Connects directly to your own WHOOP 5.0 strap over Bluetooth to read sensor data — no WHOOP account or subscription involved."
+        INFOPLIST_KEY_UILaunchScreen_Generation: "YES"
+        INFOPLIST_KEY_UISupportedInterfaceOrientations: "UIInterfaceOrientationPortrait"
+        GENERATE_INFOPLIST_FILE: "YES"
+        CODE_SIGN_STYLE: Automatic
+  WhoopDiagnosticTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: WhoopDiagnosticTests
+    dependencies:
+      - target: WhoopDiagnostic
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.pulsewhoop.WhoopDiagnosticTests
+        GENERATE_INFOPLIST_FILE: "YES"
+        CODE_SIGN_STYLE: Automatic
+schemes:
+  WhoopDiagnostic:
+    build:
+      targets:
+        WhoopDiagnostic: all
+    test:
+      targets:
+        - WhoopDiagnosticTests
+    run:
+      config: Debug

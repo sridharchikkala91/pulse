@@ -1,0 +1,409 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		0E91B55471BDCC7D8F56CFCF /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C213590E27FC0730B260E0D4 /* ContentView.swift */; };
+		203D6E8024DFA9854E788B69 /* WhoopProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6421C51915505A20E2F2DD8A /* WhoopProtocol.swift */; };
+		384FCC5119102C2E4B3C3619 /* WhoopBLEManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA6A13F0C5CA164998BF7A12 /* WhoopBLEManager.swift */; };
+		397E7B7FAAC5C70CEA654BD0 /* WhoopDiagnosticApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = CAB78CBF8F8988C20F2A35BF /* WhoopDiagnosticApp.swift */; };
+		3ED4BD72541734EA3EE26428 /* WhoopProtocolTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A44AAEAE59E87A1938EA4274 /* WhoopProtocolTests.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		902C9DEBCCE8A6DE172866C6 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = AB6994F1ECC425DEE342D27D /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 4D9BD4B66B10410F0E242C27;
+			remoteInfo = WhoopDiagnostic;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		6421C51915505A20E2F2DD8A /* WhoopProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhoopProtocol.swift; sourceTree = "<group>"; };
+		67AEF94B04135A13F8E0FB74 /* WhoopDiagnosticTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = WhoopDiagnosticTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		85E468716D31D61BF22B52CA /* WhoopDiagnostic.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = WhoopDiagnostic.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A44AAEAE59E87A1938EA4274 /* WhoopProtocolTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhoopProtocolTests.swift; sourceTree = "<group>"; };
+		BA6A13F0C5CA164998BF7A12 /* WhoopBLEManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhoopBLEManager.swift; sourceTree = "<group>"; };
+		C213590E27FC0730B260E0D4 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		CAB78CBF8F8988C20F2A35BF /* WhoopDiagnosticApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhoopDiagnosticApp.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		39546A6D381A3A19BE830011 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				85E468716D31D61BF22B52CA /* WhoopDiagnostic.app */,
+				67AEF94B04135A13F8E0FB74 /* WhoopDiagnosticTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		8706B07933579108147DB3F7 /* WhoopDiagnosticTests */ = {
+			isa = PBXGroup;
+			children = (
+				A44AAEAE59E87A1938EA4274 /* WhoopProtocolTests.swift */,
+			);
+			path = WhoopDiagnosticTests;
+			sourceTree = "<group>";
+		};
+		C05C3761E136B7D6D696420D /* WhoopDiagnostic */ = {
+			isa = PBXGroup;
+			children = (
+				C213590E27FC0730B260E0D4 /* ContentView.swift */,
+				BA6A13F0C5CA164998BF7A12 /* WhoopBLEManager.swift */,
+				CAB78CBF8F8988C20F2A35BF /* WhoopDiagnosticApp.swift */,
+				6421C51915505A20E2F2DD8A /* WhoopProtocol.swift */,
+			);
+			path = WhoopDiagnostic;
+			sourceTree = "<group>";
+		};
+		C2BB2106E7A58A45621D7FBC = {
+			isa = PBXGroup;
+			children = (
+				C05C3761E136B7D6D696420D /* WhoopDiagnostic */,
+				8706B07933579108147DB3F7 /* WhoopDiagnosticTests */,
+				39546A6D381A3A19BE830011 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		4D9BD4B66B10410F0E242C27 /* WhoopDiagnostic */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 246213B34B4F1B9BDC6F3580 /* Build configuration list for PBXNativeTarget "WhoopDiagnostic" */;
+			buildPhases = (
+				45BC3F758369DDA302A8A651 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = WhoopDiagnostic;
+			packageProductDependencies = (
+			);
+			productName = WhoopDiagnostic;
+			productReference = 85E468716D31D61BF22B52CA /* WhoopDiagnostic.app */;
+			productType = "com.apple.product-type.application";
+		};
+		9BEB2AC927F2CDA8F920DD81 /* WhoopDiagnosticTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 13F061D82AB27FAE2E8E7B28 /* Build configuration list for PBXNativeTarget "WhoopDiagnosticTests" */;
+			buildPhases = (
+				6A7CE8B56348509CCFF887BA /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				A38E783CB2B864BBB7E30FB9 /* PBXTargetDependency */,
+			);
+			name = WhoopDiagnosticTests;
+			packageProductDependencies = (
+			);
+			productName = WhoopDiagnosticTests;
+			productReference = 67AEF94B04135A13F8E0FB74 /* WhoopDiagnosticTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		AB6994F1ECC425DEE342D27D /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					4D9BD4B66B10410F0E242C27 = {
+						ProvisioningStyle = Automatic;
+					};
+					9BEB2AC927F2CDA8F920DD81 = {
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = 669EB7D0413149C72A445961 /* Build configuration list for PBXProject "WhoopDiagnostic" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = C2BB2106E7A58A45621D7FBC;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 39546A6D381A3A19BE830011 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				4D9BD4B66B10410F0E242C27 /* WhoopDiagnostic */,
+				9BEB2AC927F2CDA8F920DD81 /* WhoopDiagnosticTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		45BC3F758369DDA302A8A651 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				0E91B55471BDCC7D8F56CFCF /* ContentView.swift in Sources */,
+				384FCC5119102C2E4B3C3619 /* WhoopBLEManager.swift in Sources */,
+				397E7B7FAAC5C70CEA654BD0 /* WhoopDiagnosticApp.swift in Sources */,
+				203D6E8024DFA9854E788B69 /* WhoopProtocol.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		6A7CE8B56348509CCFF887BA /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				3ED4BD72541734EA3EE26428 /* WhoopProtocolTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		A38E783CB2B864BBB7E30FB9 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 4D9BD4B66B10410F0E242C27 /* WhoopDiagnostic */;
+			targetProxy = 902C9DEBCCE8A6DE172866C6 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		1DA0892110EF3CE79ACBD693 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "Connects directly to your own WHOOP 5.0 strap over Bluetooth to read sensor data — no WHOOP account or subscription involved.";
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.pulsewhoop.WhoopDiagnostic;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		22DC48F2900E4DD0EC287435 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		9CD77647BEFF2C1A589EA88B /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.pulsewhoop.WhoopDiagnosticTests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/WhoopDiagnostic.app/WhoopDiagnostic";
+			};
+			name = Debug;
+		};
+		C12D325114A1B6A4756D7345 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.pulsewhoop.WhoopDiagnosticTests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/WhoopDiagnostic.app/WhoopDiagnostic";
+			};
+			name = Release;
+		};
+		D5F9250A9CD97B12B9245B4B /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "Connects directly to your own WHOOP 5.0 strap over Bluetooth to read sensor data — no WHOOP account or subscription involved.";
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.pulsewhoop.WhoopDiagnostic;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		D989E9E049D94CD197C9900C /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		13F061D82AB27FAE2E8E7B28 /* Build configuration list for PBXNativeTarget "WhoopDiagnosticTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				9CD77647BEFF2C1A589EA88B /* Debug */,
+				C12D325114A1B6A4756D7345 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		246213B34B4F1B9BDC6F3580 /* Build configuration list for PBXNativeTarget "WhoopDiagnostic" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				D5F9250A9CD97B12B9245B4B /* Debug */,
+				1DA0892110EF3CE79ACBD693 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		669EB7D0413149C72A445961 /* Build configuration list for PBXProject "WhoopDiagnostic" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				22DC48F2900E4DD0EC287435 /* Debug */,
+				D989E9E049D94CD197C9900C /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = AB6994F1ECC425DEE342D27D /* Project object */;
+}
