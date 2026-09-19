@@ -771,89 +771,110 @@
     }
   }
 
+  // Runs one connect->drain attempt on an already-authorized device (no new
+  // picker — device.gatt.connect() doesn't need a fresh user gesture the way
+  // requestDevice() does). Resolves "complete" on HISTORY_COMPLETE or
+  // "disconnected" when the link drops, whichever happens first.
+  function runOneOffloadAttempt(device, samples, onProgress){
+    return new Promise(async (resolve)=>{
+      let settled = false;
+      const settle = reason => { if(!settled){ settled = true; resolve(reason); } };
+      let cmdChar = null;
+      const onDisconnect = ()=> settle("disconnected");
+      device.addEventListener("gattserverdisconnected", onDisconnect, { once:true });
+      try{
+        const server = await device.gatt.connect();
+        const service = await server.getPrimaryService(WHOOP_PROPRIETARY_SERVICE);
+        const notifyUuids = [
+          "fd4b0003-cce1-4033-93ce-002d5875f58a",
+          "fd4b0004-cce1-4033-93ce-002d5875f58a",
+          "fd4b0005-cce1-4033-93ce-002d5875f58a",
+          "fd4b0007-cce1-4033-93ce-002d5875f58a"
+        ];
+        for(const uuid of notifyUuids){
+          try{
+            const c = await service.getCharacteristic(uuid);
+            await c.startNotifications();
+            c.addEventListener("characteristicvaluechanged", async (e)=>{
+              const bytes = new Uint8Array(e.target.value.buffer);
+              const decoded = WhoopProtocol.decodeWhoop5Frame(bytes);
+              if(!decoded) return;
+              if(decoded.type === 49){
+                const sub = decoded.cmd;
+                if(sub === 2){
+                  const pay = decoded.payload;
+                  if(pay.length >= 18 && cmdChar){
+                    const token = pay.slice(10, 18);
+                    try{
+                      await cmdChar.writeValueWithResponse(new Uint8Array(WhoopProtocol.encodeWhoop5Command(0x17, [0x01, ...token])));
+                    }catch(ackErr){ console.error(ackErr); }
+                  }
+                } else if(sub === 3){
+                  settle("complete");
+                }
+              } else if(decoded.type === 47){
+                const sample = WhoopProtocol.decodeGen5HistorySample(decoded.payload);
+                if(sample) samples.push(sample);
+                onProgress(samples.length);
+              }
+            });
+          }catch(e){ console.error(e); }
+        }
+        cmdChar = await service.getCharacteristic("fd4b0002-cce1-4033-93ce-002d5875f58a");
+        await cmdChar.writeValueWithResponse(new Uint8Array(WhoopProtocol.CLIENT_HELLO));
+        await sleep(1500);
+        await cmdChar.writeValueWithResponse(new Uint8Array(WhoopProtocol.encodeWhoop5Command(0x22, [0x00])));
+        await sleep(1500);
+        await cmdChar.writeValueWithResponse(new Uint8Array(WhoopProtocol.encodeWhoop5Command(0x16, [0x00])));
+      }catch(e){
+        console.error(e);
+        settle("error");
+      }
+    });
+  }
+
   async function syncSleepData(){
     const status = $("syncStatus");
     const setStatus = s => { status.textContent = s; };
-    setStatus("Starting sync...");
-    let chunkCount = 0;
-    let cmdChar = null;
-    let finished = false;
+    const MAX_ATTEMPTS = 30;
     const samples = [];
 
-    async function finishSync(reason){
-      if(finished) return;
-      finished = true;
-      setStatus("Processing " + samples.length + " records...");
-      const sessions = extractSleepSessions(samples);
-      const dailyResults = sessionsToDaily(sessions);
-      await saveSyncedDays(dailyResults);
-      await renderToday();
-      const droppedNote = reason === "disconnected" ? " — connection dropped before finishing, partial data saved" : "";
-      if(dailyResults.length){
-        const summary = dailyResults.map(d=>d.date+" ("+d.hours.toFixed(1)+"h)").join(", ");
-        setStatus("Synced " + dailyResults.length + " night(s): " + summary + droppedNote);
-      } else {
-        setStatus("Sync finished but found no qualifying sleep sessions in " + samples.length + " records" + droppedNote);
-      }
-    }
-
+    setStatus("Pick your strap to start syncing...");
+    let device;
     try{
-      const device = await navigator.bluetooth.requestDevice({
+      device = await navigator.bluetooth.requestDevice({
         filters: [{ services:[HR_SERVICE] }],
         optionalServices: [BATTERY_SERVICE, WHOOP_PROPRIETARY_SERVICE]
       });
-      setStatus("Connected to " + device.name + ". Starting offload...");
-      device.addEventListener("gattserverdisconnected", ()=>{ finishSync("disconnected"); });
-      const server = await device.gatt.connect();
-      const service = await server.getPrimaryService(WHOOP_PROPRIETARY_SERVICE);
-      const notifyUuids = [
-        "fd4b0003-cce1-4033-93ce-002d5875f58a",
-        "fd4b0004-cce1-4033-93ce-002d5875f58a",
-        "fd4b0005-cce1-4033-93ce-002d5875f58a",
-        "fd4b0007-cce1-4033-93ce-002d5875f58a"
-      ];
-      for(const uuid of notifyUuids){
-        try{
-          const c = await service.getCharacteristic(uuid);
-          await c.startNotifications();
-          c.addEventListener("characteristicvaluechanged", async (e)=>{
-            const bytes = new Uint8Array(e.target.value.buffer);
-            const decoded = WhoopProtocol.decodeWhoop5Frame(bytes);
-            if(!decoded) return;
-            if(decoded.type === 49){
-              const sub = decoded.cmd;
-              if(sub === 2){
-                const pay = decoded.payload;
-                if(pay.length >= 18){
-                  const token = pay.slice(10, 18);
-                  try{
-                    await cmdChar.writeValueWithResponse(new Uint8Array(WhoopProtocol.encodeWhoop5Command(0x17, [0x01, ...token])));
-                  }catch(ackErr){ console.error(ackErr); }
-                }
-              } else if(sub === 3){
-                finishSync("complete");
-              }
-            } else if(decoded.type === 47){
-              chunkCount++;
-              const sample = WhoopProtocol.decodeGen5HistorySample(decoded.payload);
-              if(sample) samples.push(sample);
-              if(chunkCount % 200 === 0) setStatus("Pulling history... " + chunkCount + " records so far");
-            }
-          });
-        }catch(e){
-          console.error(e);
-        }
-      }
-      cmdChar = await service.getCharacteristic("fd4b0002-cce1-4033-93ce-002d5875f58a");
-      await cmdChar.writeValueWithResponse(new Uint8Array(WhoopProtocol.CLIENT_HELLO));
-      await sleep(1500);
-      await cmdChar.writeValueWithResponse(new Uint8Array(WhoopProtocol.encodeWhoop5Command(0x22, [0x00])));
-      await sleep(1500);
-      await cmdChar.writeValueWithResponse(new Uint8Array(WhoopProtocol.encodeWhoop5Command(0x16, [0x00])));
-      setStatus("Pulling history... 0 records so far");
     }catch(e){
       setStatus("Sync failed: " + (e && e.message ? e.message : e));
-      console.error(e);
+      return;
+    }
+
+    let attempt = 0, reason = "disconnected";
+    while(attempt < MAX_ATTEMPTS && reason !== "complete"){
+      attempt++;
+      setStatus("Syncing (attempt " + attempt + ")... " + samples.length + " records so far");
+      reason = await runOneOffloadAttempt(device, samples, (count)=>{
+        setStatus("Syncing (attempt " + attempt + ")... " + count + " records so far");
+      });
+      if(reason !== "complete" && attempt < MAX_ATTEMPTS){
+        setStatus("Connection dropped, reconnecting to continue (" + samples.length + " records so far)...");
+        await sleep(2000);
+      }
+    }
+
+    setStatus("Processing " + samples.length + " records...");
+    const sessions = extractSleepSessions(samples);
+    const dailyResults = sessionsToDaily(sessions);
+    await saveSyncedDays(dailyResults);
+    await renderToday();
+    const caughtUpNote = reason === "complete" ? " — fully caught up!" : " — stopped after " + attempt + " reconnect attempts, run Sync again later to continue";
+    if(dailyResults.length){
+      const summary = dailyResults.map(d=>d.date+" ("+d.hours.toFixed(1)+"h)").join(", ");
+      setStatus("Synced " + dailyResults.length + " night(s): " + summary + caughtUpNote);
+    } else {
+      setStatus("Sync finished but found no qualifying sleep sessions in " + samples.length + " records" + caughtUpNote);
     }
   }
 
