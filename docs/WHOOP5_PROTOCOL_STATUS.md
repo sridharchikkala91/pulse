@@ -48,6 +48,33 @@ invented — where something is unverified, it says so.
 | Bonding/authentication over Web Bluetooth via Bluefy (iOS browser) | **NOT_CURRENTLY_POSSIBLE** | Bluefy could never complete the BLE authentication step needed even for the *standard* Bluetooth Heart Rate service on this strap (`ATT error 2` — Read Not Permitted — with no native OS pairing prompt ever surfacing). |
 | Bonding/authentication over Web Bluetooth via WebBLE (iOS browser) | **CONFIRMED** | WebBLE completes the same connection cleanly, standard HR and the full proprietary channel both. |
 
+## Native iOS verification (2026-09-20)
+
+**First project milestone achieved and verified on real hardware:** the
+Phase 1 SwiftUI/CoreBluetooth diagnostic app (`ios/WhoopDiagnostic/`)
+connected directly to the project owner's real WHOOP 5.0 strap, with no
+WHOOP app involved at any point. Confirmed on-screen:
+
+- Bluetooth: ON, WHOOP: FOUND, Connection: CONNECTED
+- Handshake: SUCCESS (the ported `WhoopProtocol.clientHello` accepted by
+  the real strap, same as the web implementation)
+- Device name: `WHOOP 5AG0185866` (matches the real strap)
+- Battery: 8.4% (real, plausible, consistent with prior readings from the
+  web implementation trending down over time)
+- Live HR: 85 bpm (standard Bluetooth Heart Rate characteristic, live)
+- Firmware: correctly shown as "Not available" with the documented
+  reason, rather than fabricated — `REPORT_VERSION_INFO` still gets no
+  response on this firmware, same finding as the web implementation.
+
+This independently confirms the web implementation's protocol findings
+were correct and portable — the same CRC algorithms, envelope format, and
+`CLIENT_HELLO` handshake worked identically from a completely different
+BLE stack (CoreBluetooth vs. Web Bluetooth).
+
+**Not yet exercised on iOS:** historical data offload, RR intervals,
+temperature, and local persistence — these remain Phase 1's honestly-
+labeled gaps (see the app's own UI) until later phases.
+
 ## Gaps for native (Swift/Kotlin) implementation to investigate
 
 These are things this project's Web Bluetooth implementation cannot answer,
