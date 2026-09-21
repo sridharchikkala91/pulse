@@ -118,4 +118,33 @@ final class WhoopAnalyticsTests: XCTestCase {
         let score = try XCTUnwrap(WhoopAnalytics.sleepDurationScore(lastNightHours: 7, recentNightsHours: [7, 7, 7, 7]))
         XCTAssertEqual(score, 100)
     }
+
+    // MARK: - Sleep consistency + debt
+
+    func testSleepConsistencyScoreHundredForIdenticalBedtimes() throws {
+        let score = try XCTUnwrap(WhoopAnalytics.sleepConsistencyScore(startHoursSincePreviousNoon: [23, 23, 23, 23]))
+        XCTAssertEqual(score, 100)
+    }
+
+    func testSleepConsistencyScoreMatchesHandComputedValue() throws {
+        // median=22, deviations sorted=[1,1,1,3] -> MAD median=1 -> robustStdDev=1.4826
+        // score = (1 - 1.4826/2) * 100 = 25.87 -> rounds to 26
+        let score = try XCTUnwrap(WhoopAnalytics.sleepConsistencyScore(startHoursSincePreviousNoon: [23, 21, 25, 21]))
+        XCTAssertEqual(score, 26)
+    }
+
+    func testSleepConsistencyScoreNilForEmptyInput() {
+        XCTAssertNil(WhoopAnalytics.sleepConsistencyScore(startHoursSincePreviousNoon: []))
+    }
+
+    func testSleepDebtHoursSumsShortfallsOnly() {
+        // shortfalls vs need=8: max(0,2)=2, max(0,1)=1, max(0,0)=0, max(0,-1)->0
+        let debt = WhoopAnalytics.sleepDebtHours(recentNightsHours: [6, 7, 8, 9], sleepNeedHours: 8)
+        XCTAssertEqual(debt, 3, accuracy: 0.0001)
+    }
+
+    func testSleepDebtHoursZeroWhenAlwaysMeetingNeed() {
+        let debt = WhoopAnalytics.sleepDebtHours(recentNightsHours: [8, 9, 10], sleepNeedHours: 8)
+        XCTAssertEqual(debt, 0, accuracy: 0.0001)
+    }
 }

@@ -27,6 +27,18 @@ struct TodayDashboardView: View {
         )
     }
 
+    private var sleepNeedBaseline: WhoopAnalytics.RobustBaseline? {
+        WhoopAnalytics.rollingBaseline(dailyMetrics.compactMap(\.sleepHours))
+    }
+    /// Sleep debt over the last 7 nights against a personal need baseline
+    /// (median of recent nights) — see WhoopAnalytics.sleepDebtHours.
+    private var sleepDebtHours: Double? {
+        guard let need = sleepNeedBaseline?.median, need > 0 else { return nil }
+        let recent = dailyMetrics.prefix(7).compactMap(\.sleepHours)
+        guard !recent.isEmpty else { return nil }
+        return WhoopAnalytics.sleepDebtHours(recentNightsHours: Array(recent), sleepNeedHours: need)
+    }
+
     private var recoveryColor: Color {
         guard let recoveryScore else { return .gray }
         if recoveryScore >= 67 { return .green }
@@ -47,6 +59,9 @@ struct TodayDashboardView: View {
                     HStack(spacing: 12) {
                         statTile("HRV", latest?.hrv.map { "\(Int($0))ms" } ?? "--", .purple)
                         statTile("RHR", latest?.restingHeartRate.map { "\(Int($0))bpm" } ?? "--", .orange)
+                    }
+                    if let debt = sleepDebtHours {
+                        statTile("Sleep debt (7d)", String(format: "%.1fh", debt), debt > 0 ? .red : .green)
                     }
                     if ble.liveHeartRateBPM != nil || ble.connectionState == "CONNECTED" {
                         statTile("Live HR", ble.liveHeartRateBPM.map { "\($0) bpm" } ?? "connecting...", .red)

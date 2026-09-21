@@ -139,6 +139,19 @@ final class WhoopBLEManager: NSObject, ObservableObject {
         central.connect(found, options: nil)
     }
 
+    /// Phase 42 (privacy): forgets the remembered strap so tryAutoReconnect
+    /// stops trying it and a future connect starts from a fresh scan.
+    /// Does NOT touch any OS-level Bluetooth pairing — CoreBluetooth/Web
+    /// Bluetooth never exposed control over that in this project (see
+    /// docs/WHOOP5_LIMITATIONS.md); this only clears this app's own memory
+    /// of which peripheral to look for.
+    func forgetSavedPeripheral() {
+        UserDefaults.standard.removeObject(forKey: Self.lastPeripheralIDKey)
+        if connectionState != "DISCONNECTED" {
+            disconnect()
+        }
+    }
+
     private func log(_ s: String) {
         lastLog = s
     }

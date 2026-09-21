@@ -19,6 +19,9 @@ struct ContentView: View {
             TrendsView()
                 .tabItem { Label("Trends", systemImage: "chart.line.uptrend.xyaxis") }
 
+            CalendarView()
+                .tabItem { Label("Calendar", systemImage: "calendar") }
+
             DiagnosticsView(ble: ble, healthKit: healthKit)
                 .tabItem { Label("Diagnostics", systemImage: "wrench.and.screwdriver") }
         }

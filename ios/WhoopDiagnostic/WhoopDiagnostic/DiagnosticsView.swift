@@ -185,6 +185,8 @@ struct DiagnosticsView: View {
                         }
                     }
                 }
+
+                PrivacySectionView(ble: ble)
             }
             .navigationTitle("Diagnostics")
             .fileImporter(isPresented: $isImportingCSV, allowedContentTypes: [.commaSeparatedText, .plainText]) { result in

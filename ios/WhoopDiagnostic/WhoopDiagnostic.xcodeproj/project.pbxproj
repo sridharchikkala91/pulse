@@ -18,8 +18,10 @@
 		3ED4BD72541734EA3EE26428 /* WhoopProtocolTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A44AAEAE59E87A1938EA4274 /* WhoopProtocolTests.swift */; };
 		418E6066B80B1CB6D006D830 /* WhoopAnalyticsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06CFA450324BE1D73EFE9F87 /* WhoopAnalyticsTests.swift */; };
 		6C626C19FF3CB736815B3446 /* WhoopHealthKitImporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C3AD008D7E5684C6CB6DCD2 /* WhoopHealthKitImporter.swift */; };
+		71AE2B70BF53FC64380EF7F2 /* PrivacySectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B02906AAA8A497B950C467 /* PrivacySectionView.swift */; };
 		7802D5B0FAD7A4BCED181DB1 /* DiagnosticsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D89038211E1B15C43861348C /* DiagnosticsView.swift */; };
 		7C3A2BCA35610B56BFA4075B /* TrendsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A6FDD165F3DA367532DC20FE /* TrendsView.swift */; };
+		7CC3C078C75253434CFF55E3 /* CalendarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABB5575F348F671F45B6A421 /* CalendarView.swift */; };
 		92044211B3F027CD1C891285 /* WorkoutSectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 847779237CA93F6BFB8B7483 /* WorkoutSectionView.swift */; };
 		9BBB388F4A67A560A2C317BA /* TodayDashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8449F6997A97867FE459D7B7 /* TodayDashboardView.swift */; };
 		9D009122AC7A2B65D1210832 /* JournalSectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 965EC300F8EA4C182187AE0A /* JournalSectionView.swift */; };
@@ -53,9 +55,11 @@
 		847779237CA93F6BFB8B7483 /* WorkoutSectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutSectionView.swift; sourceTree = "<group>"; };
 		85E468716D31D61BF22B52CA /* WhoopDiagnostic.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = WhoopDiagnostic.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		965EC300F8EA4C182187AE0A /* JournalSectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JournalSectionView.swift; sourceTree = "<group>"; };
+		A1B02906AAA8A497B950C467 /* PrivacySectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivacySectionView.swift; sourceTree = "<group>"; };
 		A44AAEAE59E87A1938EA4274 /* WhoopProtocolTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhoopProtocolTests.swift; sourceTree = "<group>"; };
 		A4BA366EBC265CDB148841EA /* WhoopJournalEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhoopJournalEngine.swift; sourceTree = "<group>"; };
 		A6FDD165F3DA367532DC20FE /* TrendsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrendsView.swift; sourceTree = "<group>"; };
+		ABB5575F348F671F45B6A421 /* CalendarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarView.swift; sourceTree = "<group>"; };
 		AEC1EA6B0785A310E08525AD /* WhoopDiagnostic.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = WhoopDiagnostic.entitlements; sourceTree = "<group>"; };
 		BA6A13F0C5CA164998BF7A12 /* WhoopBLEManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhoopBLEManager.swift; sourceTree = "<group>"; };
 		C1AA899A1F9FE7F23DEB54C5 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
@@ -91,10 +95,12 @@
 		C05C3761E136B7D6D696420D /* WhoopDiagnostic */ = {
 			isa = PBXGroup;
 			children = (
+				ABB5575F348F671F45B6A421 /* CalendarView.swift */,
 				C213590E27FC0730B260E0D4 /* ContentView.swift */,
 				D89038211E1B15C43861348C /* DiagnosticsView.swift */,
 				C1AA899A1F9FE7F23DEB54C5 /* Info.plist */,
 				965EC300F8EA4C182187AE0A /* JournalSectionView.swift */,
+				A1B02906AAA8A497B950C467 /* PrivacySectionView.swift */,
 				8449F6997A97867FE459D7B7 /* TodayDashboardView.swift */,
 				A6FDD165F3DA367532DC20FE /* TrendsView.swift */,
 				C52215609B0B9FD151D33A53 /* WhoopAnalytics.swift */,
@@ -202,9 +208,11 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				7CC3C078C75253434CFF55E3 /* CalendarView.swift in Sources */,
 				0E91B55471BDCC7D8F56CFCF /* ContentView.swift in Sources */,
 				7802D5B0FAD7A4BCED181DB1 /* DiagnosticsView.swift in Sources */,
 				9D009122AC7A2B65D1210832 /* JournalSectionView.swift in Sources */,
+				71AE2B70BF53FC64380EF7F2 /* PrivacySectionView.swift in Sources */,
 				9BBB388F4A67A560A2C317BA /* TodayDashboardView.swift in Sources */,
 				7C3A2BCA35610B56BFA4075B /* TrendsView.swift in Sources */,
 				2EF6FDAF54D97B76D709A67A /* WhoopAnalytics.swift in Sources */,

@@ -142,12 +142,12 @@ enum WhoopAnalytics {
         return min(max(Int(age.rounded()), 10), 90)
     }
 
-    // MARK: - Phase 27: Sleep Score (duration component only, for now)
+    // MARK: - Phase 27: Sleep Score
 
-    /// A partial Sleep Score based on duration relative to a personal
-    /// sleep-need baseline (median of recent nights). Consistency,
-    /// efficiency, and stage-based components are NOT implemented yet —
-    /// they need data this project hasn't decoded (see
+    /// Duration component: how last night compares to a personal
+    /// sleep-need baseline (median of recent nights). Stage-based
+    /// components (REM/light/deep proportions) are NOT implemented — they
+    /// need data this project hasn't decoded (see
     /// docs/WHOOP5_LIMITATIONS.md: only a coarse wake/still/sleep/up enum
     /// is available, not true accelerometer-derived sleep architecture).
     /// Returns nil rather than a fabricated full score when there isn't
@@ -157,5 +157,31 @@ enum WhoopAnalytics {
         let ratio = lastNightHours / baseline.median
         let score = min(max(ratio * 100, 0), 100)
         return Int(score.rounded())
+    }
+
+    /// Consistency component: how stable recent bedtimes have been.
+    /// `startHoursSincePreviousNoon` should already be normalized to avoid
+    /// the midnight wraparound discontinuity — e.g. an 11pm bedtime is 11,
+    /// a 1am bedtime is 13 (noon-anchored, not midnight-anchored), so
+    /// consecutive late-evening/post-midnight bedtimes stay comparable on
+    /// one continuous scale instead of jumping between ~23 and ~1.
+    /// Uses the robust MAD baseline: tight MAD (consistent bedtimes) scores
+    /// high, wide MAD (erratic bedtimes) scores low. 2 hours of spread
+    /// (MAD) is treated as the point where the score bottoms out at 0 —
+    /// this specific threshold is this project's own reasonable choice,
+    /// not a WHOOP- or research-derived constant.
+    static func sleepConsistencyScore(startHoursSincePreviousNoon: [Double]) -> Int? {
+        guard let baseline = rollingBaseline(startHoursSincePreviousNoon) else { return nil }
+        let maxSpreadHours = 2.0
+        let score = (1 - (baseline.robustStdDev / maxSpreadHours)) * 100
+        return min(max(Int(score.rounded()), 0), 100)
+    }
+
+    /// Sleep debt: cumulative shortfall (in hours) against a personal
+    /// sleep-need baseline over the given nights, floored at 0 per night
+    /// (oversleeping one night doesn't create "negative debt" that offsets
+    /// a shortfall on another — each night's shortfall is independent).
+    static func sleepDebtHours(recentNightsHours: [Double], sleepNeedHours: Double) -> Double {
+        recentNightsHours.reduce(0.0) { total, hours in total + max(0, sleepNeedHours - hours) }
     }
 }
