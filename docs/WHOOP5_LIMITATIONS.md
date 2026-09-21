@@ -78,9 +78,15 @@ gone permanently; it can't be re-requested from the strap.
 so an active sync is far less likely to be suspended by backgrounding,
 and (2) checkpointing the session-extraction-and-save logic every
 2,000 new samples instead of only at the very end, so a kill mid-sync
-loses at most one checkpoint's worth of data. Not yet confirmed to
-survive an actual real-world backgrounding/overnight test — that
-still needs to happen before this is considered fully resolved.
+loses at most one checkpoint's worth of data.
+
+**Confirmed fixed on real hardware (2026-09-22):** a follow-up sync
+run reached **"fully caught up!"** — `HISTORY_COMPLETE` — after
+draining 153,199 records in its final run, with a checkpoint (1 night
+saved) surviving partway through. The strap's entire historical
+backlog is now fully drained for the first time. Going forward, syncs
+should be small/incremental (just since the last sync) rather than
+needing to chew through a multi-day/week backlog.
 
 ## What this means for scoping future work
 
