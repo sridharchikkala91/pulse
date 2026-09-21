@@ -71,9 +71,26 @@ were correct and portable — the same CRC algorithms, envelope format, and
 `CLIENT_HELLO` handshake worked identically from a completely different
 BLE stack (CoreBluetooth vs. Web Bluetooth).
 
-**Not yet exercised on iOS:** historical data offload, RR intervals,
-temperature, and local persistence — these remain Phase 1's honestly-
-labeled gaps (see the app's own UI) until later phases.
+**Not yet exercised on iOS:** RR intervals — remains a Phase 1 gap.
+
+## Native iOS Phases 3/5/6/11-13/15/30/36/37/41 verification (2026-09-21)
+
+Built same-session on top of Phase 1, then verified on the real device
+once reconnected:
+
+- **Handshake/battery/live HR still work** after all the additions —
+  no regression from adding SwiftData, analytics, CSV import, export,
+  or HealthKit code alongside the existing BLE manager.
+- **Historical offload (Phase 3) confirmed working on iOS**, not just
+  the web app — same real strap, same large backlog behavior (14,200+
+  records in one run, consistent with the web app's earlier
+  17,760-record runs against this same strap).
+- **HealthKit entitlement (Phase 37) CONFIRMED to provision correctly
+  on a free personal Apple Developer team** — the real system
+  authorization dialog appeared on-device and was granted. This
+  resolves the open uncertainty: a paid Apple Developer Program
+  membership is NOT required for this entitlement, at least not for
+  read-only access to the sample types this project requests.
 
 ## Gaps for native (Swift/Kotlin) implementation to investigate
 
