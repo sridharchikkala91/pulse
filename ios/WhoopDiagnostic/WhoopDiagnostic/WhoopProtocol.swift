@@ -170,6 +170,45 @@ enum WhoopProtocol {
         UInt32(b[at]) | (UInt32(b[at + 1]) << 8) | (UInt32(b[at + 2]) << 16) | (UInt32(b[at + 3]) << 24)
     }
 
+    // MARK: - Sleep session extraction (ported from the web app's proven algorithm)
+
+    struct SleepSession {
+        var startTimestamp: UInt32
+        var endTimestamp: UInt32
+        var skinTemps: [Double]
+    }
+
+    /// Merges contiguous sleepState=="sleep" samples into sessions, bridging
+    /// gaps up to 5 minutes (brief dropped samples/BLE hiccups), and drops
+    /// anything under 30 minutes (noise, not a real sleep period). Direct
+    /// port of `extractSleepSessions` in the web app's index.html, already
+    /// proven against real multi-thousand-record captures.
+    static func extractSleepSessions(_ samples: [HistorySample]) -> [SleepSession] {
+        let sorted = samples.sorted { $0.timestamp < $1.timestamp }
+        let gapMergeSeconds: UInt32 = 300
+        var sessions: [SleepSession] = []
+        var current: SleepSession?
+
+        for s in sorted {
+            if s.sleepState == 2 {
+                if var cur = current, s.timestamp - cur.endTimestamp <= gapMergeSeconds {
+                    cur.endTimestamp = s.timestamp
+                    if let t = s.skinTempC { cur.skinTemps.append(t) }
+                    current = cur
+                } else {
+                    if let cur = current { sessions.append(cur) }
+                    current = SleepSession(startTimestamp: s.timestamp, endTimestamp: s.timestamp,
+                                            skinTemps: s.skinTempC.map { [$0] } ?? [])
+                }
+            } else if let cur = current, s.timestamp - cur.endTimestamp > gapMergeSeconds {
+                sessions.append(cur)
+                current = nil
+            }
+        }
+        if let cur = current { sessions.append(cur) }
+        return sessions.filter { $0.endTimestamp - $0.startTimestamp >= 1800 }
+    }
+
     /// Decodes a Gen5HistorySample from HISTORICAL_DATA (type 47) payload
     /// bytes (the array already has the 3-byte [type,seq,cmd] prefix
     /// stripped). See docs/WHOOP5_DATA_DICTIONARY.md for field provenance

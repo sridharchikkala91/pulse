@@ -1,4 +1,5 @@
 import SwiftUI
+import SwiftData
 
 @main
 struct WhoopDiagnosticApp: App {
@@ -6,5 +7,11 @@ struct WhoopDiagnosticApp: App {
         WindowGroup {
             ContentView()
         }
+        .modelContainer(for: [
+            SleepSessionRecord.self,
+            DailyMetricsRecord.self,
+            RawPacketRecord.self,
+            SyncStateRecord.self
+        ])
     }
 }

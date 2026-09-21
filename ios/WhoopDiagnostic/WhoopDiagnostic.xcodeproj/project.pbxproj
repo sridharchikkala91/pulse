@@ -12,6 +12,7 @@
 		384FCC5119102C2E4B3C3619 /* WhoopBLEManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA6A13F0C5CA164998BF7A12 /* WhoopBLEManager.swift */; };
 		397E7B7FAAC5C70CEA654BD0 /* WhoopDiagnosticApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = CAB78CBF8F8988C20F2A35BF /* WhoopDiagnosticApp.swift */; };
 		3ED4BD72541734EA3EE26428 /* WhoopProtocolTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A44AAEAE59E87A1938EA4274 /* WhoopProtocolTests.swift */; };
+		A64B182488584F106E1FAEEF /* WhoopDatabase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74A2ED99D874BA9667F9C494 /* WhoopDatabase.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -27,6 +28,7 @@
 /* Begin PBXFileReference section */
 		6421C51915505A20E2F2DD8A /* WhoopProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhoopProtocol.swift; sourceTree = "<group>"; };
 		67AEF94B04135A13F8E0FB74 /* WhoopDiagnosticTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = WhoopDiagnosticTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		74A2ED99D874BA9667F9C494 /* WhoopDatabase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhoopDatabase.swift; sourceTree = "<group>"; };
 		85E468716D31D61BF22B52CA /* WhoopDiagnostic.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = WhoopDiagnostic.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A44AAEAE59E87A1938EA4274 /* WhoopProtocolTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhoopProtocolTests.swift; sourceTree = "<group>"; };
 		BA6A13F0C5CA164998BF7A12 /* WhoopBLEManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhoopBLEManager.swift; sourceTree = "<group>"; };
@@ -57,6 +59,7 @@
 			children = (
 				C213590E27FC0730B260E0D4 /* ContentView.swift */,
 				BA6A13F0C5CA164998BF7A12 /* WhoopBLEManager.swift */,
+				74A2ED99D874BA9667F9C494 /* WhoopDatabase.swift */,
 				CAB78CBF8F8988C20F2A35BF /* WhoopDiagnosticApp.swift */,
 				6421C51915505A20E2F2DD8A /* WhoopProtocol.swift */,
 			);
@@ -120,6 +123,7 @@
 				LastUpgradeCheck = 1430;
 				TargetAttributes = {
 					4D9BD4B66B10410F0E242C27 = {
+						DevelopmentTeam = FLRJTH92XN;
 						ProvisioningStyle = Automatic;
 					};
 					9BEB2AC927F2CDA8F920DD81 = {
@@ -154,6 +158,7 @@
 			files = (
 				0E91B55471BDCC7D8F56CFCF /* ContentView.swift in Sources */,
 				384FCC5119102C2E4B3C3619 /* WhoopBLEManager.swift in Sources */,
+				A64B182488584F106E1FAEEF /* WhoopDatabase.swift in Sources */,
 				397E7B7FAAC5C70CEA654BD0 /* WhoopDiagnosticApp.swift in Sources */,
 				203D6E8024DFA9854E788B69 /* WhoopProtocol.swift in Sources */,
 			);
@@ -184,6 +189,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = FLRJTH92XN;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "Connects directly to your own WHOOP 5.0 strap over Bluetooth to read sensor data — no WHOOP account or subscription involved.";
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -249,7 +255,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -303,6 +309,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = FLRJTH92XN;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "Connects directly to your own WHOOP 5.0 strap over Bluetooth to read sensor data — no WHOOP account or subscription involved.";
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -362,7 +369,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";

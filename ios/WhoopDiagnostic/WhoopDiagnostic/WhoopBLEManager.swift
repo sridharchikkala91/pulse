@@ -1,10 +1,11 @@
 import Foundation
 import CoreBluetooth
+import SwiftData
 
-/// Phase 1 scope only: connect, complete the WHOOP 5.0 handshake, read
-/// battery, read standard live heart rate. Historical offload (Phase 3) and
-/// full sensor decoding are intentionally NOT implemented here — see
-/// docs/WHOOP5_LIMITATIONS.md and the project's phased development order.
+/// Phase 1 (diagnostic connect/handshake/battery/live HR) + Phase 3
+/// (historical offload) + Phase 5 (local persistence via SwiftData).
+/// Full sensor decoding beyond Gen5HistorySample and background sync
+/// (Phase 7) are NOT implemented here — see docs/WHOOP5_LIMITATIONS.md.
 final class WhoopBLEManager: NSObject, ObservableObject {
 
     // MARK: - GATT UUIDs (see docs/WHOOP5_GATT.md)
@@ -38,9 +39,25 @@ final class WhoopBLEManager: NSObject, ObservableObject {
     @Published var packetsUnknown: Int = 0
     @Published var lastLog: String = ""
 
+    // MARK: - Published sync state (Phase 3)
+
+    @Published var syncStatus: String = "NEVER RUN"
+    @Published var syncRecordsThisRun: Int = 0
+    @Published var lastSyncDate: Date?
+    @Published var recordsStoredTotal: Int = 0
+
+    /// Set by the view once a SwiftData context is available. Persistence
+    /// is skipped (with a log line) if this is never set.
+    var modelContext: ModelContext?
+
     private var central: CBCentralManager!
     private var peripheral: CBPeripheral?
     private var cmdWriteCharacteristic: CBCharacteristic?
+
+    private var isSyncing = false
+    private var syncReconnectAttempts = 0
+    private let maxSyncReconnectAttempts = 30
+    private var historicalSamples: [WhoopProtocol.HistorySample] = []
 
     override init() {
         super.init()
@@ -48,9 +65,7 @@ final class WhoopBLEManager: NSObject, ObservableObject {
     }
 
     private func log(_ s: String) {
-        DispatchQueue.main.async {
-            self.lastLog = s
-        }
+        lastLog = s
     }
 
     func startScan() {
@@ -63,8 +78,34 @@ final class WhoopBLEManager: NSObject, ObservableObject {
     }
 
     func disconnect() {
+        isSyncing = false
         if let p = peripheral {
             central.cancelPeripheralConnection(p)
+        }
+    }
+
+    /// Starts the Phase 3 historical offload. Requires an existing
+    /// successful handshake (uses the same connection/characteristics).
+    func startHistoricalSync() {
+        guard handshakeState == "SUCCESS", cmdWriteCharacteristic != nil else {
+            log("Cannot sync — handshake not established yet")
+            return
+        }
+        isSyncing = true
+        syncReconnectAttempts = 0
+        historicalSamples = []
+        syncRecordsThisRun = 0
+        syncStatus = "Starting sync..."
+        beginOffloadCommands()
+    }
+
+    private func beginOffloadCommands() {
+        syncStatus = "Requesting data range..."
+        sendCommand(0x22, [0x00]) // GET_DATA_RANGE
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in
+            guard let self, self.isSyncing else { return }
+            self.syncStatus = "Draining history... \(self.syncRecordsThisRun) records so far"
+            self.sendCommand(0x16, [0x00]) // SEND_HISTORICAL_DATA
         }
     }
 
@@ -72,6 +113,58 @@ final class WhoopBLEManager: NSObject, ObservableObject {
         guard let c = cmdWriteCharacteristic, let p = peripheral else { return }
         let frame = WhoopProtocol.encodeCommand(cmd, payload)
         p.writeValue(Data(frame), for: c, type: .withResponse)
+    }
+
+    // MARK: - Sync completion & persistence (Phase 5)
+
+    private func finishSync(reason: String) {
+        guard isSyncing else { return }
+        isSyncing = false
+        syncStatus = "Processing \(historicalSamples.count) records..."
+
+        let sessions = WhoopProtocol.extractSleepSessions(historicalSamples)
+        var byDate: [String: (durationHours: Double, avgTemp: Double?, start: UInt32, end: UInt32)] = [:]
+        for session in sessions {
+            let hours = Double(session.endTimestamp - session.startTimestamp) / 3600
+            let date = Date(timeIntervalSince1970: TimeInterval(session.endTimestamp))
+            let dateKey = Self.sleepDayKey(for: date)
+            let avgTemp = session.skinTemps.isEmpty ? nil : session.skinTemps.reduce(0, +) / Double(session.skinTemps.count)
+            if byDate[dateKey] == nil || byDate[dateKey]!.durationHours < hours {
+                byDate[dateKey] = (hours, avgTemp, session.startTimestamp, session.endTimestamp)
+            }
+        }
+
+        if let context = modelContext {
+            for (dateKey, info) in byDate {
+                let record = SleepSessionRecord(
+                    dateKey: dateKey, startTimestamp: Int(info.start), endTimestamp: Int(info.end),
+                    durationHours: info.durationHours, averageSkinTempC: info.avgTemp, source: "synced"
+                )
+                context.insert(record)
+            }
+            try? context.save()
+        } else {
+            log("No ModelContext set — sync results were NOT persisted")
+        }
+
+        recordsStoredTotal += byDate.count
+        lastSyncDate = Date()
+        let suffix = reason == "complete" ? " — fully caught up!" : " — stopped after \(syncReconnectAttempts) reconnect attempts, run Sync again to continue"
+        if byDate.isEmpty {
+            syncStatus = "Sync finished: no qualifying sleep sessions in \(historicalSamples.count) records\(suffix)"
+        } else {
+            let summary = byDate.map { "\($0.key) (\(String(format: "%.1f", $0.value.durationHours))h)" }.joined(separator: ", ")
+            syncStatus = "Synced \(byDate.count) night(s): \(summary)\(suffix)"
+        }
+    }
+
+    /// Matches the web app's "sleep day rolls over at 6am, not midnight" convention.
+    private static func sleepDayKey(for date: Date) -> String {
+        let adjusted = date.addingTimeInterval(-6 * 3600)
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        formatter.timeZone = TimeZone.current
+        return formatter.string(from: adjusted)
     }
 }
 
@@ -114,6 +207,20 @@ extension WhoopBLEManager: CBCentralManagerDelegate {
         connectionState = "DISCONNECTED"
         handshakeState = "NOT ATTEMPTED"
         cmdWriteCharacteristic = nil
+
+        if isSyncing {
+            syncReconnectAttempts += 1
+            if syncReconnectAttempts >= maxSyncReconnectAttempts {
+                finishSync(reason: "gave up")
+                return
+            }
+            syncStatus = "Connection dropped, reconnecting (\(syncRecordsThisRun) records so far)..."
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { [weak self] in
+                guard let self, self.isSyncing else { return }
+                self.connectionState = "CONNECTING"
+                self.central.connect(peripheral, options: nil)
+            }
+        }
     }
 }
 
@@ -141,7 +248,7 @@ extension WhoopBLEManager: CBPeripheralDelegate {
                 peripheral.setNotifyValue(true, for: characteristic)
             } else if characteristic.uuid == Self.cmdWriteChar {
                 cmdWriteCharacteristic = characteristic
-                // Kick off the handshake as soon as the write characteristic is ready.
+                // Kick off (or resume, if this is a mid-sync reconnect) the handshake.
                 handshakeState = "IN PROGRESS"
                 peripheral.writeValue(Data(WhoopProtocol.clientHello), for: characteristic, type: .withResponse)
             } else if [Self.cmdResponseChar, Self.eventsChar, Self.dataChar, Self.memfaultChar].contains(characteristic.uuid) {
@@ -163,25 +270,70 @@ extension WhoopBLEManager: CBPeripheralDelegate {
         let bytes = [UInt8](data)
         guard let decoded = WhoopProtocol.decodeFrame(bytes) else {
             packetsRejected += 1
+            persistRawPacket(characteristic.uuid, bytes: bytes, status: "INVALID", reason: "failed to parse envelope")
             return
         }
         guard decoded.crc16Valid, decoded.crc32Valid else {
             packetsRejected += 1
+            persistRawPacket(characteristic.uuid, bytes: bytes, packetType: Int(decoded.type),
+                              status: "INVALID", reason: "CRC mismatch")
             return
         }
 
         if decoded.type == 36, decoded.cmd == 0x91 { // COMMAND_RESPONSE to GET_HELLO
             packetsDecoded += 1
             handshakeState = "SUCCESS"
-            // Now that the handshake is confirmed, ask for battery.
-            sendCommand(26, [0x00]) // GET_BATTERY_LEVEL
+            if isSyncing {
+                // This is a resume-after-reconnect handshake; pick the offload back up.
+                beginOffloadCommands()
+            } else {
+                sendCommand(26, [0x00]) // GET_BATTERY_LEVEL, normal (non-sync) flow
+            }
         } else if decoded.type == 36, decoded.cmd == 26, decoded.payload.count >= 4 { // GET_BATTERY_LEVEL response
             packetsDecoded += 1
             let raw = UInt16(decoded.payload[2]) | (UInt16(decoded.payload[3]) << 8)
             batteryPercent = Double(raw) / 10
+        } else if decoded.type == 49 { // METADATA
+            handleMetadata(decoded)
+        } else if decoded.type == 47 { // HISTORICAL_DATA
+            packetsDecoded += 1
+            if let sample = WhoopProtocol.decodeHistorySample(decoded.payload) {
+                historicalSamples.append(sample)
+                syncRecordsThisRun += 1
+                if syncRecordsThisRun % 200 == 0 {
+                    syncStatus = "Draining history... \(syncRecordsThisRun) records so far"
+                }
+            } else {
+                persistRawPacket(characteristic.uuid, bytes: bytes, packetType: 47,
+                                  status: "PARTIAL", reason: "payload too short to decode Gen5HistorySample")
+            }
         } else {
             packetsUnknown += 1
+            persistRawPacket(characteristic.uuid, bytes: bytes, packetType: Int(decoded.type),
+                              status: "UNKNOWN", reason: nil)
         }
+    }
+
+    private func handleMetadata(_ decoded: WhoopProtocol.DecodedFrame) {
+        let sub = decoded.cmd
+        if sub == 2, decoded.payload.count >= 18 { // HISTORY_END
+            let token = Array(decoded.payload[10..<18])
+            sendCommand(0x17, [0x01] + token) // HISTORICAL_DATA_RESULT ACK
+        } else if sub == 3 { // HISTORY_COMPLETE
+            finishSync(reason: "complete")
+        }
+        // sub == 1 (HISTORY_START) is informational — no action needed.
+    }
+
+    private func persistRawPacket(_ uuid: CBUUID, bytes: [UInt8], packetType: Int? = nil, status: String, reason: String?) {
+        guard let context = modelContext else { return }
+        let hex = bytes.map { String(format: "%02x", $0) }.joined(separator: " ")
+        let record = RawPacketRecord(characteristicUUID: uuid.uuidString, payloadHex: hex,
+                                      packetType: packetType, decodeStatus: status, errorReason: reason)
+        context.insert(record)
+        // Not saving on every single packet to avoid excessive disk I/O during
+        // a large offload — SwiftData autosaves periodically; an explicit
+        // save happens at sync completion in finishSync().
     }
 
     func peripheral(_ peripheral: CBPeripheral, didWriteValueFor characteristic: CBCharacteristic, error: Error?) {

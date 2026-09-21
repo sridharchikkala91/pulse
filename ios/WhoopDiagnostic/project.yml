@@ -2,7 +2,7 @@ name: WhoopDiagnostic
 options:
   bundleIdPrefix: com.pulsewhoop
   deploymentTarget:
-    iOS: "16.0"
+    iOS: "17.0"
 settings:
   base:
     SWIFT_VERSION: "5.0"
@@ -20,6 +20,7 @@ targets:
         INFOPLIST_KEY_UISupportedInterfaceOrientations: "UIInterfaceOrientationPortrait"
         GENERATE_INFOPLIST_FILE: "YES"
         CODE_SIGN_STYLE: Automatic
+        DEVELOPMENT_TEAM: FLRJTH92XN
   WhoopDiagnosticTests:
     type: bundle.unit-test
     platform: iOS

@@ -73,6 +73,50 @@ final class WhoopProtocolTests: XCTestCase {
         0x4e, 0x2a, 0x2d, 0x00, 0x00, 0x00, 0xb6, 0xbf, 0xa8, 0xc0, 0x00, 0x00, 0x00
     ]
 
+    // MARK: - Sleep session extraction
+
+    private func sample(_ ts: UInt32, sleepState: UInt8, skinTemp: Double? = 34.0) -> WhoopProtocol.HistorySample {
+        WhoopProtocol.HistorySample(
+            timestamp: ts, tempAux1C: 32, tempAux2C: 33, skinTempC: skinTemp,
+            statusWord0: 0, statusWord1: 1, statusWord2: 2, sleepState: sleepState, spo2CandidateRaw: 0
+        )
+    }
+
+    func testExtractSleepSessionsMergesShortGapsAndDropsShortRuns() {
+        var samples: [WhoopProtocol.HistorySample] = []
+        // A 40-minute sleep run (2400s), one real session.
+        for t in stride(from: UInt32(0), through: 2400, by: 60) {
+            samples.append(sample(t, sleepState: 2))
+        }
+        // A 2-minute gap (under the 5-minute merge threshold) then more sleep — should merge into the same session.
+        for t in stride(from: UInt32(2520), through: 3600, by: 60) {
+            samples.append(sample(t, sleepState: 2))
+        }
+        // A brief 10-minute "sleep" blip, isolated by long gaps on both sides — too short to count on its own.
+        for t in stride(from: UInt32(10000), through: 10600, by: 60) {
+            samples.append(sample(t, sleepState: 2))
+        }
+
+        let sessions = WhoopProtocol.extractSleepSessions(samples)
+        XCTAssertEqual(sessions.count, 1, "the merged run should be one session; the 10-minute blip should be dropped")
+        XCTAssertEqual(sessions[0].startTimestamp, 0)
+        XCTAssertEqual(sessions[0].endTimestamp, 3600)
+    }
+
+    func testExtractSleepSessionsIgnoresNonSleepStates() {
+        let samples = (0...100).map { i in sample(UInt32(i * 60), sleepState: i % 2 == 0 ? 2 : 0) }
+        // Alternating sleep/wake every minute never sustains 30 minutes of
+        // contiguous "sleep" state, but IS within the 5-minute merge gap
+        // each time, so it should still merge into one long session overall.
+        let sessions = WhoopProtocol.extractSleepSessions(samples)
+        XCTAssertEqual(sessions.count, 1)
+    }
+
+    func testExtractSleepSessionsReturnsEmptyForNoQualifyingData() {
+        let samples = [sample(0, sleepState: 2), sample(60, sleepState: 2)] // only 60s, under the 30-min minimum
+        XCTAssertTrue(WhoopProtocol.extractSleepSessions(samples).isEmpty)
+    }
+
     func testDecodeHistorySampleOnRealCapturedChunk() throws {
         let sample = try XCTUnwrap(WhoopProtocol.decodeHistorySample(Self.realHistoryChunk1))
         XCTAssertEqual(sample.timestamp, 1_789_761_166) // 2026-09-18 19:52:46 UTC = ~1:22am IST
