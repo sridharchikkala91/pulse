@@ -60,6 +60,28 @@
    behavior around bonding, background execution, and connection
    stability that this research cannot predict.
 
+## Real incident: 60,000+ record sync lost entirely (2026-09-21, iOS, fixed)
+
+A real historical offload run on the physical strap decoded 60,000+
+records (confirmed via the Diagnostics packet counters) but saved
+**zero nights** to the database — "Last synchronization: Never" after
+it stopped. Root cause: nothing was persisted until the very end of a
+sync (`finishSync()`), and the app had no `UIBackgroundModes`
+declared, so iOS almost certainly suspended it when the screen locked
+partway through the (multi-minute-plus) drain. The strap's own trim
+cursor still advanced for real (the next run started at a much lower
+record count, proving the ACKs landed) — so backlog progress was real,
+but the sleep/vitals data extractable from that chunk of history is
+gone permanently; it can't be re-requested from the strap.
+
+**Fixed** by (1) declaring `bluetooth-central` in `UIBackgroundModes`
+so an active sync is far less likely to be suspended by backgrounding,
+and (2) checkpointing the session-extraction-and-save logic every
+2,000 new samples instead of only at the very end, so a kill mid-sync
+loses at most one checkpoint's worth of data. Not yet confirmed to
+survive an actual real-world backgrounding/overnight test — that
+still needs to happen before this is considered fully resolved.
+
 ## What this means for scoping future work
 
 Given (3) and (8) above, the "phone doesn't need to be with the user all
