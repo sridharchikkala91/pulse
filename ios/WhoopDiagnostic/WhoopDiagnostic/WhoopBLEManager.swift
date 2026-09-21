@@ -96,9 +96,47 @@ final class WhoopBLEManager: NSObject, ObservableObject {
     private let maxSyncReconnectAttempts = 30
     private var historicalSamples: [WhoopProtocol.HistorySample] = []
 
+    // MARK: - Automatic reconnection (Phase 7/13)
+
+    /// UserDefaults key for the last-connected peripheral's identifier, so
+    /// a later launch (including a background relaunch triggered by
+    /// CBCentralManagerOptionRestoreIdentifierKey) can find the SAME
+    /// strap again via retrievePeripherals(withIdentifiers:) without a
+    /// fresh scan+picker.
+    private static let lastPeripheralIDKey = "WhoopBLEManager.lastPeripheralID"
+    /// A fixed restoration identifier lets iOS relaunch this app in the
+    /// background to handle BLE events (e.g. the strap reconnecting) even
+    /// after the app was fully terminated by the system — the actual
+    /// mechanism behind "the phone doesn't need to be with the user all
+    /// day" (master prompt section 2). NOT the same as surviving a
+    /// user-initiated force-quit; iOS does not restore apps the user
+    /// explicitly killed, only ones the SYSTEM terminated for resources.
+    private static let restorationIdentifier = "com.pulsewhoop.WhoopDiagnostic.centralManager"
+
     override init() {
         super.init()
-        central = CBCentralManager(delegate: self, queue: nil)
+        central = CBCentralManager(
+            delegate: self, queue: nil,
+            options: [CBCentralManagerOptionRestoreIdentifierKey: Self.restorationIdentifier]
+        )
+    }
+
+    /// Tries to reconnect to whichever peripheral we connected to last
+    /// time, without a fresh scan or device picker. Call once Bluetooth is
+    /// confirmed powered on. Falls through silently (does nothing) if no
+    /// peripheral was ever connected before, or it's no longer known to
+    /// the system (e.g. unpaired) — startScan() remains the fallback.
+    func tryAutoReconnect() {
+        guard central.state == .poweredOn else { return }
+        guard let idString = UserDefaults.standard.string(forKey: Self.lastPeripheralIDKey),
+              let id = UUID(uuidString: idString) else { return }
+        let known = central.retrievePeripherals(withIdentifiers: [id])
+        guard let found = known.first else { return }
+        peripheral = found
+        whoopFound = true
+        deviceName = found.name
+        connectionState = "CONNECTING"
+        central.connect(found, options: nil)
     }
 
     private func log(_ s: String) {
@@ -237,12 +275,30 @@ final class WhoopBLEManager: NSObject, ObservableObject {
 extension WhoopBLEManager: CBCentralManagerDelegate {
     func centralManagerDidUpdateState(_ central: CBCentralManager) {
         switch central.state {
-        case .poweredOn: bluetoothState = "ON"
+        case .poweredOn:
+            bluetoothState = "ON"
+            if connectionState == "DISCONNECTED" { tryAutoReconnect() }
         case .poweredOff: bluetoothState = "OFF"
         case .unauthorized: bluetoothState = "UNAUTHORIZED"
         case .unsupported: bluetoothState = "UNSUPPORTED"
         case .resetting: bluetoothState = "RESETTING"
         default: bluetoothState = "UNKNOWN"
+        }
+    }
+
+    /// Called when iOS relaunches this app in the background to hand back
+    /// a CBCentralManager whose scan/connections were still active at
+    /// termination — the actual mechanism for surviving the app being
+    /// killed by the SYSTEM (not a user force-quit) while still connected
+    /// or reconnecting to the strap.
+    func centralManager(_ central: CBCentralManager, willRestoreState dict: [String: Any]) {
+        if let peripherals = dict[CBCentralManagerRestoredStatePeripheralsKey] as? [CBPeripheral],
+           let restored = peripherals.first {
+            peripheral = restored
+            restored.delegate = self
+            deviceName = restored.name
+            whoopFound = true
+            connectionState = restored.state == .connected ? "CONNECTED" : "CONNECTING"
         }
     }
 
@@ -259,6 +315,7 @@ extension WhoopBLEManager: CBCentralManagerDelegate {
     func centralManager(_ central: CBCentralManager, didConnect peripheral: CBPeripheral) {
         connectionState = "CONNECTED"
         peripheral.delegate = self
+        UserDefaults.standard.set(peripheral.identifier.uuidString, forKey: Self.lastPeripheralIDKey)
         peripheral.discoverServices([Self.heartRateService, Self.proprietaryService])
     }
 
