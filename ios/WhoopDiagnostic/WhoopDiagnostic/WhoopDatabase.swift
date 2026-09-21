@@ -41,15 +41,26 @@ final class DailyMetricsRecord {
     var skinTempC: Double?
     var restingHeartRate: Double?
     var hrv: Double?
+    var strain: Double?
+    var spo2Percent: Double?
+    var respiratoryRate: Double?
+    var averageHeartRate: Double?
+    var maxHeartRate: Double?
     /// Our own algorithmic estimate — NEVER WHOOP's real score. See
     /// section 25/16 of the master prompt: WHOOP_EXPORT-sourced recovery
     /// must never be overwritten by our algorithm.
     var recoveryScoreOurs: Double?
-    var recoveryScoreSource: String // "OUR_ALGORITHM" | "WHOOP_EXPORT"
+    /// WHOOP's own real recovery %, ONLY ever populated from a CSV export
+    /// import — never computed by this app. Kept as a separate field from
+    /// recoveryScoreOurs specifically so the two can never collide.
+    var recoveryScoreWhoop: Double?
+    /// "OUR_ALGORITHM" | "WHOOP_EXPORT" | "synced" | "manual" — which
+    /// source most recently wrote the bulk of this record's fields.
+    var source: String
 
     init(dateKey: String) {
         self.dateKey = dateKey
-        self.recoveryScoreSource = "OUR_ALGORITHM"
+        self.source = "OUR_ALGORITHM"
     }
 }
 
