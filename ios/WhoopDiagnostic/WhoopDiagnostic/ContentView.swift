@@ -11,6 +11,8 @@ struct ContentView: View {
     @State private var ageText: String = ""
     @State private var isImportingCSV = false
     @State private var importStatus: String = ""
+    @State private var exportedCSVURL: URL?
+    @State private var exportedJSONURL: URL?
 
     private var age: Double? { Double(ageText) }
 
@@ -93,6 +95,19 @@ struct ContentView: View {
                     }
                 }
 
+                Section("Export your data (Phase 41)") {
+                    if let url = exportedCSVURL {
+                        ShareLink("Export daily metrics as CSV", item: url)
+                    } else {
+                        Button("Export daily metrics as CSV") { exportedCSVURL = writeExportFile(csv: true) }
+                    }
+                    if let url = exportedJSONURL {
+                        ShareLink("Export everything as JSON", item: url)
+                    } else {
+                        Button("Export everything as JSON") { exportedJSONURL = writeExportFile(csv: false) }
+                    }
+                }
+
                 if !dailyMetrics.isEmpty {
                     Section("Daily metrics history") {
                         ForEach(dailyMetrics.prefix(14)) { day in
@@ -160,6 +175,25 @@ struct ContentView: View {
                     importStatus = "Import failed: \(error.localizedDescription)"
                 }
             }
+        }
+    }
+
+    private func writeExportFile(csv: Bool) -> URL? {
+        let tempDir = FileManager.default.temporaryDirectory
+        do {
+            if csv {
+                let url = tempDir.appendingPathComponent("whoop_daily_metrics.csv")
+                try WhoopDataExport.exportDailyMetricsCSV(dailyMetrics).write(to: url, atomically: true, encoding: .utf8)
+                return url
+            } else {
+                let url = tempDir.appendingPathComponent("whoop_export.json")
+                let data = try WhoopDataExport.exportJSON(dailyMetrics: dailyMetrics, sleepSessions: sleepSessions)
+                try data.write(to: url)
+                return url
+            }
+        } catch {
+            importStatus = "Export failed: \(error.localizedDescription)"
+            return nil
         }
     }
 
