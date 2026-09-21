@@ -45,6 +45,7 @@
 		A44AAEAE59E87A1938EA4274 /* WhoopProtocolTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhoopProtocolTests.swift; sourceTree = "<group>"; };
 		AEC1EA6B0785A310E08525AD /* WhoopDiagnostic.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = WhoopDiagnostic.entitlements; sourceTree = "<group>"; };
 		BA6A13F0C5CA164998BF7A12 /* WhoopBLEManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhoopBLEManager.swift; sourceTree = "<group>"; };
+		C1AA899A1F9FE7F23DEB54C5 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		C213590E27FC0730B260E0D4 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		C52215609B0B9FD151D33A53 /* WhoopAnalytics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhoopAnalytics.swift; sourceTree = "<group>"; };
 		CAB78CBF8F8988C20F2A35BF /* WhoopDiagnosticApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhoopDiagnosticApp.swift; sourceTree = "<group>"; };
@@ -76,6 +77,7 @@
 			isa = PBXGroup;
 			children = (
 				C213590E27FC0730B260E0D4 /* ContentView.swift */,
+				C1AA899A1F9FE7F23DEB54C5 /* Info.plist */,
 				C52215609B0B9FD151D33A53 /* WhoopAnalytics.swift */,
 				BA6A13F0C5CA164998BF7A12 /* WhoopBLEManager.swift */,
 				72D1D1216F00F91E61729C67 /* WhoopCSVImport.swift */,
@@ -221,12 +223,7 @@
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = FLRJTH92XN;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "Connects directly to your own WHOOP 5.0 strap over Bluetooth to read sensor data — no WHOOP account or subscription involved.";
-				INFOPLIST_KEY_NSHealthShareUsageDescription = "Reads health data as a secondary source alongside your WHOOP strap — WHOOP stays the primary source, HealthKit only fills gaps.";
-				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "This app does not write to HealthKit; this description exists only because iOS requires it for any HealthKit entitlement.";
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				INFOPLIST_FILE = WhoopDiagnostic/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -344,12 +341,7 @@
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = FLRJTH92XN;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "Connects directly to your own WHOOP 5.0 strap over Bluetooth to read sensor data — no WHOOP account or subscription involved.";
-				INFOPLIST_KEY_NSHealthShareUsageDescription = "Reads health data as a secondary source alongside your WHOOP strap — WHOOP stays the primary source, HealthKit only fills gaps.";
-				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "This app does not write to HealthKit; this description exists only because iOS requires it for any HealthKit entitlement.";
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				INFOPLIST_FILE = WhoopDiagnostic/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",

@@ -95,6 +95,7 @@ final class WhoopBLEManager: NSObject, ObservableObject {
         syncReconnectAttempts = 0
         historicalSamples = []
         syncRecordsThisRun = 0
+        samplesSavedUpTo = 0
         syncStatus = "Starting sync..."
         beginOffloadCommands()
     }
@@ -117,11 +118,27 @@ final class WhoopBLEManager: NSObject, ObservableObject {
 
     // MARK: - Sync completion & persistence (Phase 5)
 
-    private func finishSync(reason: String) {
-        guard isSyncing else { return }
-        isSyncing = false
-        syncStatus = "Processing \(historicalSamples.count) records..."
+    /// How many NEW samples accumulate before we checkpoint-save, so a
+    /// mid-sync kill (backgrounding suspension, crash, user force-quit)
+    /// loses at most one checkpoint's worth of data instead of the entire
+    /// run. A real run lost 60,000+ decoded records this way before this
+    /// fix existed — see docs/WHOOP5_LIMITATIONS.md.
+    private let checkpointInterval = 2000
+    private var samplesSavedUpTo = 0
 
+    /// Extracts sleep sessions from ALL samples accumulated so far (not
+    /// just the ones since the last checkpoint — extractSleepSessions
+    /// needs full context to merge across gaps correctly) and saves/
+    /// updates the resulting SleepSessionRecord rows. Safe to call
+    /// repeatedly and mid-sync: SwiftData upserts by re-inserting, and a
+    /// later checkpoint with more data simply produces longer/more
+    /// accurate sessions for the same dates.
+    @discardableResult
+    private func persistCurrentSamples() -> Int {
+        guard let context = modelContext else {
+            log("No ModelContext set — sync results were NOT persisted")
+            return 0
+        }
         let sessions = WhoopProtocol.extractSleepSessions(historicalSamples)
         var byDate: [String: (durationHours: Double, avgTemp: Double?, start: UInt32, end: UInt32)] = [:]
         for session in sessions {
@@ -133,28 +150,38 @@ final class WhoopBLEManager: NSObject, ObservableObject {
                 byDate[dateKey] = (hours, avgTemp, session.startTimestamp, session.endTimestamp)
             }
         }
-
-        if let context = modelContext {
-            for (dateKey, info) in byDate {
-                let record = SleepSessionRecord(
-                    dateKey: dateKey, startTimestamp: Int(info.start), endTimestamp: Int(info.end),
-                    durationHours: info.durationHours, averageSkinTempC: info.avgTemp, source: "synced"
-                )
-                context.insert(record)
-            }
-            try? context.save()
-        } else {
-            log("No ModelContext set — sync results were NOT persisted")
+        for (dateKey, info) in byDate {
+            let record = SleepSessionRecord(
+                dateKey: dateKey, startTimestamp: Int(info.start), endTimestamp: Int(info.end),
+                durationHours: info.durationHours, averageSkinTempC: info.avgTemp, source: "synced"
+            )
+            context.insert(record)
         }
+        try? context.save()
+        samplesSavedUpTo = historicalSamples.count
+        return byDate.count
+    }
 
-        recordsStoredTotal += byDate.count
+    private func checkpointIfDue() {
+        guard historicalSamples.count - samplesSavedUpTo >= checkpointInterval else { return }
+        let saved = persistCurrentSamples()
+        recordsStoredTotal = saved
+        syncStatus = "Draining history... \(syncRecordsThisRun) records so far (checkpoint saved, \(saved) night(s) so far)"
+    }
+
+    private func finishSync(reason: String) {
+        guard isSyncing else { return }
+        isSyncing = false
+        syncStatus = "Processing \(historicalSamples.count) records..."
+
+        let nightsCount = persistCurrentSamples()
+        recordsStoredTotal = nightsCount
         lastSyncDate = Date()
         let suffix = reason == "complete" ? " — fully caught up!" : " — stopped after \(syncReconnectAttempts) reconnect attempts, run Sync again to continue"
-        if byDate.isEmpty {
+        if nightsCount == 0 {
             syncStatus = "Sync finished: no qualifying sleep sessions in \(historicalSamples.count) records\(suffix)"
         } else {
-            let summary = byDate.map { "\($0.key) (\(String(format: "%.1f", $0.value.durationHours))h)" }.joined(separator: ", ")
-            syncStatus = "Synced \(byDate.count) night(s): \(summary)\(suffix)"
+            syncStatus = "Synced \(nightsCount) night(s) from \(historicalSamples.count) records\(suffix)"
         }
     }
 
@@ -303,6 +330,7 @@ extension WhoopBLEManager: CBPeripheralDelegate {
                 if syncRecordsThisRun % 200 == 0 {
                     syncStatus = "Draining history... \(syncRecordsThisRun) records so far"
                 }
+                checkpointIfDue()
             } else {
                 persistRawPacket(characteristic.uuid, bytes: bytes, packetType: 47,
                                   status: "PARTIAL", reason: "payload too short to decode Gen5HistorySample")
