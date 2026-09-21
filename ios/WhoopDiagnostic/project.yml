@@ -16,11 +16,18 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.pulsewhoop.WhoopDiagnostic
         INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription: "Connects directly to your own WHOOP 5.0 strap over Bluetooth to read sensor data — no WHOOP account or subscription involved."
+        INFOPLIST_KEY_NSHealthShareUsageDescription: "Reads health data as a secondary source alongside your WHOOP strap — WHOOP stays the primary source, HealthKit only fills gaps."
+        INFOPLIST_KEY_NSHealthUpdateUsageDescription: "This app does not write to HealthKit; this description exists only because iOS requires it for any HealthKit entitlement."
         INFOPLIST_KEY_UILaunchScreen_Generation: "YES"
         INFOPLIST_KEY_UISupportedInterfaceOrientations: "UIInterfaceOrientationPortrait"
         GENERATE_INFOPLIST_FILE: "YES"
         CODE_SIGN_STYLE: Automatic
         DEVELOPMENT_TEAM: FLRJTH92XN
+    entitlements:
+      path: WhoopDiagnostic/WhoopDiagnostic.entitlements
+      properties:
+        com.apple.developer.healthkit: true
+        com.apple.developer.healthkit.access: []
   WhoopDiagnosticTests:
     type: bundle.unit-test
     platform: iOS

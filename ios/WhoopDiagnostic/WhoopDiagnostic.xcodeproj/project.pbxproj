@@ -16,6 +16,7 @@
 		397E7B7FAAC5C70CEA654BD0 /* WhoopDiagnosticApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = CAB78CBF8F8988C20F2A35BF /* WhoopDiagnosticApp.swift */; };
 		3ED4BD72541734EA3EE26428 /* WhoopProtocolTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A44AAEAE59E87A1938EA4274 /* WhoopProtocolTests.swift */; };
 		418E6066B80B1CB6D006D830 /* WhoopAnalyticsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06CFA450324BE1D73EFE9F87 /* WhoopAnalyticsTests.swift */; };
+		6C626C19FF3CB736815B3446 /* WhoopHealthKitImporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C3AD008D7E5684C6CB6DCD2 /* WhoopHealthKitImporter.swift */; };
 		A64B182488584F106E1FAEEF /* WhoopDatabase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74A2ED99D874BA9667F9C494 /* WhoopDatabase.swift */; };
 		D2BD1D358A37697E5BEF874C /* WhoopCSVImportTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC1407B9CA4258C18540D202 /* WhoopCSVImportTests.swift */; };
 		EB05BCB5E8844E66ADCB8671 /* WhoopCSVImport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72D1D1216F00F91E61729C67 /* WhoopCSVImport.swift */; };
@@ -34,6 +35,7 @@
 /* Begin PBXFileReference section */
 		06CFA450324BE1D73EFE9F87 /* WhoopAnalyticsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhoopAnalyticsTests.swift; sourceTree = "<group>"; };
 		12CFF896AC964CEF28DFCA94 /* WhoopDataExport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhoopDataExport.swift; sourceTree = "<group>"; };
+		3C3AD008D7E5684C6CB6DCD2 /* WhoopHealthKitImporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhoopHealthKitImporter.swift; sourceTree = "<group>"; };
 		4118B691E033F7254133E24E /* WhoopDataExportTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhoopDataExportTests.swift; sourceTree = "<group>"; };
 		6421C51915505A20E2F2DD8A /* WhoopProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhoopProtocol.swift; sourceTree = "<group>"; };
 		67AEF94B04135A13F8E0FB74 /* WhoopDiagnosticTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = WhoopDiagnosticTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -41,6 +43,7 @@
 		74A2ED99D874BA9667F9C494 /* WhoopDatabase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhoopDatabase.swift; sourceTree = "<group>"; };
 		85E468716D31D61BF22B52CA /* WhoopDiagnostic.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = WhoopDiagnostic.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A44AAEAE59E87A1938EA4274 /* WhoopProtocolTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhoopProtocolTests.swift; sourceTree = "<group>"; };
+		AEC1EA6B0785A310E08525AD /* WhoopDiagnostic.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = WhoopDiagnostic.entitlements; sourceTree = "<group>"; };
 		BA6A13F0C5CA164998BF7A12 /* WhoopBLEManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhoopBLEManager.swift; sourceTree = "<group>"; };
 		C213590E27FC0730B260E0D4 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		C52215609B0B9FD151D33A53 /* WhoopAnalytics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhoopAnalytics.swift; sourceTree = "<group>"; };
@@ -78,7 +81,9 @@
 				72D1D1216F00F91E61729C67 /* WhoopCSVImport.swift */,
 				74A2ED99D874BA9667F9C494 /* WhoopDatabase.swift */,
 				12CFF896AC964CEF28DFCA94 /* WhoopDataExport.swift */,
+				AEC1EA6B0785A310E08525AD /* WhoopDiagnostic.entitlements */,
 				CAB78CBF8F8988C20F2A35BF /* WhoopDiagnosticApp.swift */,
+				3C3AD008D7E5684C6CB6DCD2 /* WhoopHealthKitImporter.swift */,
 				6421C51915505A20E2F2DD8A /* WhoopProtocol.swift */,
 			);
 			path = WhoopDiagnostic;
@@ -181,6 +186,7 @@
 				1875EDB0C0D8E43F0C9A9BB5 /* WhoopDataExport.swift in Sources */,
 				A64B182488584F106E1FAEEF /* WhoopDatabase.swift in Sources */,
 				397E7B7FAAC5C70CEA654BD0 /* WhoopDiagnosticApp.swift in Sources */,
+				6C626C19FF3CB736815B3446 /* WhoopHealthKitImporter.swift in Sources */,
 				203D6E8024DFA9854E788B69 /* WhoopProtocol.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -211,11 +217,14 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = WhoopDiagnostic/WhoopDiagnostic.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = FLRJTH92XN;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "Connects directly to your own WHOOP 5.0 strap over Bluetooth to read sensor data — no WHOOP account or subscription involved.";
+				INFOPLIST_KEY_NSHealthShareUsageDescription = "Reads health data as a secondary source alongside your WHOOP strap — WHOOP stays the primary source, HealthKit only fills gaps.";
+				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "This app does not write to HealthKit; this description exists only because iOS requires it for any HealthKit entitlement.";
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -331,11 +340,14 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = WhoopDiagnostic/WhoopDiagnostic.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = FLRJTH92XN;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "Connects directly to your own WHOOP 5.0 strap over Bluetooth to read sensor data — no WHOOP account or subscription involved.";
+				INFOPLIST_KEY_NSHealthShareUsageDescription = "Reads health data as a secondary source alongside your WHOOP strap — WHOOP stays the primary source, HealthKit only fills gaps.";
+				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "This app does not write to HealthKit; this description exists only because iOS requires it for any HealthKit entitlement.";
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
 				LD_RUNPATH_SEARCH_PATHS = (

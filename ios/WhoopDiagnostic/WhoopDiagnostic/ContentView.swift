@@ -4,6 +4,7 @@ import UniformTypeIdentifiers
 
 struct ContentView: View {
     @StateObject private var ble = WhoopBLEManager()
+    @StateObject private var healthKit = WhoopHealthKitImporter()
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \SleepSessionRecord.dateKey, order: .reverse) private var sleepSessions: [SleepSessionRecord]
     @Query(sort: \DailyMetricsRecord.dateKey, order: .reverse) private var dailyMetrics: [DailyMetricsRecord]
@@ -93,6 +94,22 @@ struct ContentView: View {
                     if !importStatus.isEmpty {
                         Text(importStatus).font(.footnote).foregroundStyle(.secondary)
                     }
+                }
+
+                Section("HealthKit — optional secondary source (Phase 37)") {
+                    row("Available on this device", WhoopHealthKitImporter.isAvailableOnThisDevice ? "YES" : "NO")
+                    row("Authorization", healthKit.authorizationStatus)
+                    Button("Request HealthKit Access") {
+                        Task { await healthKit.requestAuthorization() }
+                    }
+                    Button("Import last 7 days from HealthKit") {
+                        Task { await healthKit.importRecentSamples(days: 7, context: modelContext) }
+                    }
+                    if !healthKit.lastImportStatus.isEmpty {
+                        Text(healthKit.lastImportStatus).font(.footnote).foregroundStyle(.secondary)
+                    }
+                    Text("WHOOP stays the primary source — this never overwrites WHOOP-sourced data, only adds HEALTHKIT-labeled rows alongside it.")
+                        .font(.caption).foregroundStyle(.secondary)
                 }
 
                 Section("Export your data (Phase 41)") {

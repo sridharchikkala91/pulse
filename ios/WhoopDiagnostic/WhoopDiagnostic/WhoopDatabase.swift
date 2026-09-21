@@ -89,6 +89,32 @@ final class RawPacketRecord {
     }
 }
 
+/// Phase 15: normalized data model, decoupled from any single source's
+/// raw structure — section 15/39 of the master prompt: if WHOOP BLE says
+/// HR=70 and HealthKit says HR=71 for the same moment, both are stored;
+/// nothing is silently overwritten. The analytics engine picks a source
+/// itself when it needs one value.
+@Model
+final class HealthSampleRecord {
+    var timestamp: Date
+    var metricType: String // e.g. "heart_rate", "hrv", "resting_heart_rate", "respiratory_rate", "body_temperature", "vo2_max"
+    var value: Double
+    var unit: String
+    /// "WHOOP_BLE" | "WHOOP_EXPORT" | "HEALTHKIT" | "HEALTH_CONNECT" | "USER"
+    var source: String
+    /// "GOOD" | "LOW" | "UNKNOWN" | "INVALID"
+    var quality: String
+
+    init(timestamp: Date, metricType: String, value: Double, unit: String, source: String, quality: String = "GOOD") {
+        self.timestamp = timestamp
+        self.metricType = metricType
+        self.value = value
+        self.unit = unit
+        self.source = source
+        self.quality = quality
+    }
+}
+
 @Model
 final class SyncStateRecord {
     var lastConnected: Date?
