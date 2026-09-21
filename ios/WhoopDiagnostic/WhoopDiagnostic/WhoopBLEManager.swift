@@ -316,13 +316,23 @@ extension WhoopBLEManager: CBPeripheralDelegate {
 
     private func handleMetadata(_ decoded: WhoopProtocol.DecodedFrame) {
         let sub = decoded.cmd
-        if sub == 2, decoded.payload.count >= 18 { // HISTORY_END
-            let token = Array(decoded.payload[10..<18])
-            sendCommand(0x17, [0x01] + token) // HISTORICAL_DATA_RESULT ACK
-        } else if sub == 3 { // HISTORY_COMPLETE
+        switch sub {
+        case 1: // HISTORY_START — informational, no action needed.
+            packetsDecoded += 1
+        case 2: // HISTORY_END
+            if decoded.payload.count >= 18 {
+                let token = Array(decoded.payload[10..<18])
+                sendCommand(0x17, [0x01] + token) // HISTORICAL_DATA_RESULT ACK
+                packetsDecoded += 1
+            } else {
+                packetsRejected += 1
+            }
+        case 3: // HISTORY_COMPLETE
+            packetsDecoded += 1
             finishSync(reason: "complete")
+        default:
+            packetsUnknown += 1
         }
-        // sub == 1 (HISTORY_START) is informational — no action needed.
     }
 
     private func persistRawPacket(_ uuid: CBUUID, bytes: [UInt8], packetType: Int? = nil, status: String, reason: String?) {
