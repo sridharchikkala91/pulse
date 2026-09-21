@@ -19,6 +19,7 @@
 		418E6066B80B1CB6D006D830 /* WhoopAnalyticsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06CFA450324BE1D73EFE9F87 /* WhoopAnalyticsTests.swift */; };
 		6C626C19FF3CB736815B3446 /* WhoopHealthKitImporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C3AD008D7E5684C6CB6DCD2 /* WhoopHealthKitImporter.swift */; };
 		7802D5B0FAD7A4BCED181DB1 /* DiagnosticsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D89038211E1B15C43861348C /* DiagnosticsView.swift */; };
+		7C3A2BCA35610B56BFA4075B /* TrendsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A6FDD165F3DA367532DC20FE /* TrendsView.swift */; };
 		92044211B3F027CD1C891285 /* WorkoutSectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 847779237CA93F6BFB8B7483 /* WorkoutSectionView.swift */; };
 		9BBB388F4A67A560A2C317BA /* TodayDashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8449F6997A97867FE459D7B7 /* TodayDashboardView.swift */; };
 		9D009122AC7A2B65D1210832 /* JournalSectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 965EC300F8EA4C182187AE0A /* JournalSectionView.swift */; };
@@ -54,6 +55,7 @@
 		965EC300F8EA4C182187AE0A /* JournalSectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JournalSectionView.swift; sourceTree = "<group>"; };
 		A44AAEAE59E87A1938EA4274 /* WhoopProtocolTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhoopProtocolTests.swift; sourceTree = "<group>"; };
 		A4BA366EBC265CDB148841EA /* WhoopJournalEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhoopJournalEngine.swift; sourceTree = "<group>"; };
+		A6FDD165F3DA367532DC20FE /* TrendsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrendsView.swift; sourceTree = "<group>"; };
 		AEC1EA6B0785A310E08525AD /* WhoopDiagnostic.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = WhoopDiagnostic.entitlements; sourceTree = "<group>"; };
 		BA6A13F0C5CA164998BF7A12 /* WhoopBLEManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhoopBLEManager.swift; sourceTree = "<group>"; };
 		C1AA899A1F9FE7F23DEB54C5 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
@@ -94,6 +96,7 @@
 				C1AA899A1F9FE7F23DEB54C5 /* Info.plist */,
 				965EC300F8EA4C182187AE0A /* JournalSectionView.swift */,
 				8449F6997A97867FE459D7B7 /* TodayDashboardView.swift */,
+				A6FDD165F3DA367532DC20FE /* TrendsView.swift */,
 				C52215609B0B9FD151D33A53 /* WhoopAnalytics.swift */,
 				BA6A13F0C5CA164998BF7A12 /* WhoopBLEManager.swift */,
 				72D1D1216F00F91E61729C67 /* WhoopCSVImport.swift */,
@@ -203,6 +206,7 @@
 				7802D5B0FAD7A4BCED181DB1 /* DiagnosticsView.swift in Sources */,
 				9D009122AC7A2B65D1210832 /* JournalSectionView.swift in Sources */,
 				9BBB388F4A67A560A2C317BA /* TodayDashboardView.swift in Sources */,
+				7C3A2BCA35610B56BFA4075B /* TrendsView.swift in Sources */,
 				2EF6FDAF54D97B76D709A67A /* WhoopAnalytics.swift in Sources */,
 				384FCC5119102C2E4B3C3619 /* WhoopBLEManager.swift in Sources */,
 				EB05BCB5E8844E66ADCB8671 /* WhoopCSVImport.swift in Sources */,
