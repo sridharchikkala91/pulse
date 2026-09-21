@@ -12,7 +12,9 @@ struct WhoopDiagnosticApp: App {
             DailyMetricsRecord.self,
             RawPacketRecord.self,
             SyncStateRecord.self,
-            HealthSampleRecord.self
+            HealthSampleRecord.self,
+            JournalEntryRecord.self,
+            WorkoutRecord.self
         ])
     }
 }

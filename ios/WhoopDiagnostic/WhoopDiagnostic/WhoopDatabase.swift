@@ -115,6 +115,60 @@ final class HealthSampleRecord {
     }
 }
 
+/// Phase 31: journal entries. Manually logged, not imported — this
+/// project has no verified real column headers for WHOOP's
+/// journal_entries.csv export (only physiological_cycles.csv was checked
+/// against a real export), so guessing a parser for it risks silently
+/// mis-reading data. Manual entry sidesteps that entirely.
+@Model
+final class JournalEntryRecord {
+    var dateKey: String
+    var stressLevel: Int?    // 1 (low) - 5 (high)
+    var moodLevel: Int?      // 1 (bad) - 5 (great)
+    var sorenessLevel: Int?  // 1 (none) - 5 (severe)
+    var hadCaffeine: Bool
+    var hadAlcohol: Bool
+    var hadLateExercise: Bool
+    var feltIll: Bool
+    var notes: String
+    var createdAt: Date
+
+    init(dateKey: String) {
+        self.dateKey = dateKey
+        self.hadCaffeine = false
+        self.hadAlcohol = false
+        self.hadLateExercise = false
+        self.feltIll = false
+        self.notes = ""
+        self.createdAt = Date()
+    }
+}
+
+/// Phase 19: manual workout logging. Automatic workout DETECTION (section
+/// 19's "WorkoutCandidate" from sustained activity) needs IMU data this
+/// project hasn't decoded yet — see docs/WHOOP5_LIMITATIONS.md. Manual
+/// start/stop with computed strain from live HR samples is what's
+/// achievable today.
+@Model
+final class WorkoutRecord {
+    var activityType: String
+    var startTimestamp: Date
+    var endTimestamp: Date
+    var averageHeartRate: Double?
+    var maxHeartRate: Double?
+    /// OUR_ALGORITHM strain for just this workout window — see
+    /// WhoopAnalytics.strainScore. Never WHOOP's real number.
+    var strainOurs: Double?
+    var source: String // "manual" (only source implemented so far)
+
+    init(activityType: String, startTimestamp: Date, endTimestamp: Date) {
+        self.activityType = activityType
+        self.startTimestamp = startTimestamp
+        self.endTimestamp = endTimestamp
+        self.source = "manual"
+    }
+}
+
 @Model
 final class SyncStateRecord {
     var lastConnected: Date?

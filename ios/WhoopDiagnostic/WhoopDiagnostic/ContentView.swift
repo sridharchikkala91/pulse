@@ -112,6 +112,10 @@ struct ContentView: View {
                         .font(.caption).foregroundStyle(.secondary)
                 }
 
+                JournalSectionView()
+
+                WorkoutSectionView(ble: ble, age: age, latestRestingHeartRate: latest?.restingHeartRate)
+
                 Section("Export your data (Phase 41)") {
                     if let url = exportedCSVURL {
                         ShareLink("Export daily metrics as CSV", item: url)
@@ -240,5 +244,8 @@ struct ContentView: View {
 
 #Preview {
     ContentView()
-        .modelContainer(for: [SleepSessionRecord.self, DailyMetricsRecord.self, RawPacketRecord.self, SyncStateRecord.self])
+        .modelContainer(for: [
+            SleepSessionRecord.self, DailyMetricsRecord.self, RawPacketRecord.self, SyncStateRecord.self,
+            HealthSampleRecord.self, JournalEntryRecord.self, WorkoutRecord.self
+        ])
 }

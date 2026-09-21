@@ -50,6 +50,43 @@ final class WhoopBLEManager: NSObject, ObservableObject {
     /// is skipped (with a log line) if this is never set.
     var modelContext: ModelContext?
 
+    // MARK: - Manual workout tracking (Phase 19)
+
+    @Published var isWorkoutActive: Bool = false
+    @Published var workoutSampleCount: Int = 0
+    private var workoutHRSamples: [Double] = []
+    private var workoutStart: Date?
+
+    func startWorkout() {
+        isWorkoutActive = true
+        workoutHRSamples = []
+        workoutSampleCount = 0
+        workoutStart = Date()
+    }
+
+    /// Ends the workout, computes strain from the HR samples collected
+    /// during it (WhoopAnalytics.strainScore — OUR_ALGORITHM, not
+    /// WHOOP's real number), and saves a WorkoutRecord.
+    func endWorkout(activityType: String, restingHeartRate: Double?, age: Double?) {
+        guard let start = workoutStart else { return }
+        isWorkoutActive = false
+        let end = Date()
+        let record = WorkoutRecord(activityType: activityType, startTimestamp: start, endTimestamp: end)
+        record.averageHeartRate = workoutHRSamples.isEmpty ? nil : workoutHRSamples.reduce(0, +) / Double(workoutHRSamples.count)
+        record.maxHeartRate = workoutHRSamples.max()
+        let maxHr = WhoopAnalytics.estimateMaxHeartRate(age: age)
+        record.strainOurs = WhoopAnalytics.strainScore(
+            heartRateSamples: workoutHRSamples, restingHeartRate: restingHeartRate, maxHeartRate: maxHr
+        )
+        if let context = modelContext {
+            context.insert(record)
+            try? context.save()
+        }
+        workoutStart = nil
+        workoutHRSamples = []
+        workoutSampleCount = 0
+    }
+
     private var central: CBCentralManager!
     private var peripheral: CBPeripheral?
     private var cmdWriteCharacteristic: CBCharacteristic?
@@ -288,7 +325,12 @@ extension WhoopBLEManager: CBPeripheralDelegate {
         guard let data = characteristic.value else { return }
 
         if characteristic.uuid == Self.heartRateMeasurement {
-            liveHeartRateBPM = Self.parseHeartRate(data)
+            let bpm = Self.parseHeartRate(data)
+            liveHeartRateBPM = bpm
+            if isWorkoutActive {
+                workoutHRSamples.append(Double(bpm))
+                workoutSampleCount = workoutHRSamples.count
+            }
             return
         }
 
