@@ -30,6 +30,9 @@ final class WhoopBLEManager: NSObject, ObservableObject {
     /// CoreBluetooth. See docs/WHOOP5_LIMITATIONS.md.
     @Published var handshakeState: String = "NOT ATTEMPTED"
     @Published var batteryPercent: Double?
+    /// Avoids re-notifying on every battery read within one session — only
+    /// fires once per app run when battery first drops under 20%.
+    private var lowBatteryNotifiedThisSession = false
     @Published var deviceName: String?
     @Published var firmwareInfo: String = "Not available (REPORT_VERSION_INFO gets no response on this firmware — see docs/WHOOP5_LIMITATIONS.md)"
     @Published var liveHeartRateBPM: Int?
@@ -271,6 +274,11 @@ final class WhoopBLEManager: NSObject, ObservableObject {
         } else {
             syncStatus = "Synced \(nightsCount) night(s) from \(historicalSamples.count) records\(suffix)"
         }
+        if reason == "complete" {
+            WhoopNotifications.notifySyncComplete(nightsCount: nightsCount, recordsCount: historicalSamples.count)
+        } else {
+            WhoopNotifications.notifySyncFailed(reason: "Stopped after \(syncReconnectAttempts) reconnect attempts with \(historicalSamples.count) records processed.")
+        }
     }
 
     /// Matches the web app's "sleep day rolls over at 6am, not midnight" convention.
@@ -327,6 +335,7 @@ extension WhoopBLEManager: CBCentralManagerDelegate {
 
     func centralManager(_ central: CBCentralManager, didConnect peripheral: CBPeripheral) {
         connectionState = "CONNECTED"
+        WhoopNotifications.notifyWhoopConnected(deviceName: peripheral.name ?? "WHOOP")
         peripheral.delegate = self
         UserDefaults.standard.set(peripheral.identifier.uuidString, forKey: Self.lastPeripheralIDKey)
         peripheral.discoverServices([Self.heartRateService, Self.proprietaryService])
@@ -431,7 +440,12 @@ extension WhoopBLEManager: CBPeripheralDelegate {
         } else if decoded.type == 36, decoded.cmd == 26, decoded.payload.count >= 4 { // GET_BATTERY_LEVEL response
             packetsDecoded += 1
             let raw = UInt16(decoded.payload[2]) | (UInt16(decoded.payload[3]) << 8)
-            batteryPercent = Double(raw) / 10
+            let pct = Double(raw) / 10
+            batteryPercent = pct
+            if pct < 20, !lowBatteryNotifiedThisSession {
+                WhoopNotifications.notifyLowBattery(percent: pct)
+                lowBatteryNotifiedThisSession = true
+            }
         } else if decoded.type == 49 { // METADATA
             handleMetadata(decoded)
         } else if decoded.type == 47 { // HISTORICAL_DATA

@@ -11,8 +11,23 @@ struct PrivacySectionView: View {
 
     @State private var showDeleteConfirmation = false
     @State private var deleteStatus = ""
+    @State private var notificationStatus = ""
 
     var body: some View {
+        Section("Notifications (Phase 43)") {
+            Button("Enable notifications") {
+                Task {
+                    let granted = await WhoopNotifications.requestAuthorization()
+                    notificationStatus = granted ? "Enabled" : "Denied or unavailable"
+                }
+            }
+            if !notificationStatus.isEmpty {
+                Text(notificationStatus).font(.footnote).foregroundStyle(.secondary)
+            }
+            Text("Only operational alerts (connected, sync complete/failed, low battery) — never medical alerts.")
+                .font(.caption).foregroundStyle(.secondary)
+        }
+
         Section("Privacy (Phase 42)") {
             Text("Local-only. No cloud, no account, no analytics, no ads — everything above is the complete list of what this app does with your data.")
                 .font(.caption).foregroundStyle(.secondary)

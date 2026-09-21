@@ -25,6 +25,7 @@
 		92044211B3F027CD1C891285 /* WorkoutSectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 847779237CA93F6BFB8B7483 /* WorkoutSectionView.swift */; };
 		9BBB388F4A67A560A2C317BA /* TodayDashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8449F6997A97867FE459D7B7 /* TodayDashboardView.swift */; };
 		9D009122AC7A2B65D1210832 /* JournalSectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 965EC300F8EA4C182187AE0A /* JournalSectionView.swift */; };
+		A0BE38A551108CC2C241E855 /* WhoopNotifications.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC4A39808AA2070EB6A3AA27 /* WhoopNotifications.swift */; };
 		A64B182488584F106E1FAEEF /* WhoopDatabase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74A2ED99D874BA9667F9C494 /* WhoopDatabase.swift */; };
 		CFEAD5209B08875C3372553C /* WhoopJournalEngineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5D222364D6F8E1912F31A77F /* WhoopJournalEngineTests.swift */; };
 		D2BD1D358A37697E5BEF874C /* WhoopCSVImportTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC1407B9CA4258C18540D202 /* WhoopCSVImportTests.swift */; };
@@ -67,6 +68,7 @@
 		C52215609B0B9FD151D33A53 /* WhoopAnalytics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhoopAnalytics.swift; sourceTree = "<group>"; };
 		CAB78CBF8F8988C20F2A35BF /* WhoopDiagnosticApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhoopDiagnosticApp.swift; sourceTree = "<group>"; };
 		D89038211E1B15C43861348C /* DiagnosticsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiagnosticsView.swift; sourceTree = "<group>"; };
+		DC4A39808AA2070EB6A3AA27 /* WhoopNotifications.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhoopNotifications.swift; sourceTree = "<group>"; };
 		EC1407B9CA4258C18540D202 /* WhoopCSVImportTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhoopCSVImportTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -112,6 +114,7 @@
 				CAB78CBF8F8988C20F2A35BF /* WhoopDiagnosticApp.swift */,
 				3C3AD008D7E5684C6CB6DCD2 /* WhoopHealthKitImporter.swift */,
 				A4BA366EBC265CDB148841EA /* WhoopJournalEngine.swift */,
+				DC4A39808AA2070EB6A3AA27 /* WhoopNotifications.swift */,
 				6421C51915505A20E2F2DD8A /* WhoopProtocol.swift */,
 				847779237CA93F6BFB8B7483 /* WorkoutSectionView.swift */,
 			);
@@ -223,6 +226,7 @@
 				397E7B7FAAC5C70CEA654BD0 /* WhoopDiagnosticApp.swift in Sources */,
 				6C626C19FF3CB736815B3446 /* WhoopHealthKitImporter.swift in Sources */,
 				0C93C3ABAC83811ADB982E4A /* WhoopJournalEngine.swift in Sources */,
+				A0BE38A551108CC2C241E855 /* WhoopNotifications.swift in Sources */,
 				203D6E8024DFA9854E788B69 /* WhoopProtocol.swift in Sources */,
 				92044211B3F027CD1C891285 /* WorkoutSectionView.swift in Sources */,
 			);
