@@ -88,6 +88,29 @@ backlog is now fully drained for the first time. Going forward, syncs
 should be small/incremental (just since the last sync) rather than
 needing to chew through a multi-day/week backlog.
 
+## Dev-workflow gotcha: `devicectl install` wipes local data (2026-09-22)
+
+Discovered during this session's testing: reinstalling the app via
+`xcrun devicectl device install app` from the command line (as opposed
+to a normal Xcode "Run" ▶ deploy, or a real end-user install/update
+via TestFlight/the App Store) appears to create a **fresh app
+container each time** — confirmed by different `installationURL`
+container UUIDs printed on each install. This silently wipes all local
+SwiftData storage (synced nights, journal entries, workouts) on every
+CLI-based redeploy during active development iteration.
+
+This is **not a bug in the app itself** — a real end-user install flow
+does not behave this way, and a normal Xcode Run against an already-
+installed dev build typically preserves the container too. It only
+bit this project because of how many rapid CLI-driven redeploys
+happened during one testing session (several real syncs were
+performed and then invisibly lost this way, not by any logic fault).
+
+**Implication for future sessions:** avoid unnecessary
+`devicectl install` cycles once past the "does this compile and run"
+stage — batch code changes together before redeploying, and expect to
+re-sync from scratch after any CLI reinstall during testing.
+
 ## What this means for scoping future work
 
 Given (3) and (8) above, the "phone doesn't need to be with the user all
